@@ -20,7 +20,7 @@ export default function CenterPanel({ chatLog, onInput }) {
     };
 
     return (
-        <div className="panel">
+        <div className="panel" style={{ display: 'flex', flexDirection: 'column' }}>
             <h3>Narrative Feed</h3>
             <div className="chat-area" id="chat-feed">
                 {chatLog.map((msg) => (

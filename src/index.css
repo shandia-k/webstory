@@ -1,368 +1,140 @@
-/* --- CORE CSS VARIABLES --- */
+@import "tailwindcss";
+
+@theme {
+  /* Colors - Automatically creates bg-theme-main, text-theme-main, etc. */
+  --color-theme-main: var(--color-bg-main);
+  --color-theme-panel: var(--color-bg-panel);
+  --color-theme-text: var(--color-text-main);
+  --color-theme-muted: var(--color-text-muted);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-border: var(--color-border);
+
+  /* Animations */
+  --animate-typing: typing 1s infinite ease-in-out;
+  --animate-shake: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+
+  /* Keyframes */
+  @keyframes typing {
+
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+
+    50% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  @keyframes shake {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-4px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+}
+
+/* Base Variables */
 :root {
-  --bg-color: #0b0f19;
-  --panel-bg: #111625;
-  --text-main: #aab2c0;
-  --accent: #00f0ff;
-  --secondary: #005f6b;
-  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  --font-mono: 'Courier New', Courier, monospace;
-  --border-radius: 4px;
-  --border-style: 1px solid rgba(0, 240, 255, 0.3);
-
-  --success-color: #00ff41;
-  --fail-color: #ff3333;
-  --rare-color: #ffcc00;
+  /* Default (Sci-Fi / Cyberpunk) */
+  --color-bg-main: #09090b;
+  /* zinc-950 */
+  --color-bg-panel: #18181b;
+  /* zinc-900 */
+  --color-text-main: #d4d4d8;
+  /* zinc-300 */
+  --color-text-muted: #71717a;
+  /* zinc-500 */
+  --color-accent: #4f46e5;
+  /* indigo-600 */
+  --color-border: #27272a;
+  /* zinc-800 */
 }
 
-/* THEME: HORROR */
-[data-theme="horror"] {
-  --bg-color: #1a0505;
-  --panel-bg: #2b0a0a;
-  --text-main: #c0aaaa;
-  --accent: #ff4444;
-  --secondary: #5e0000;
-  --font-main: 'Georgia', serif;
-  --border-radius: 2px;
-  --border-style: 1px solid rgba(255, 68, 68, 0.2);
+/* Theme Overrides */
+[data-theme='scifi'] {
+  --color-bg-main: #09090b;
+  --color-bg-panel: #18181b;
+  --color-text-main: #d4d4d8;
+  --color-text-muted: #71717a;
+  --color-accent: #4f46e5;
+  --color-border: #27272a;
 }
 
-/* THEME: ROMANCE */
-[data-theme="romance"] {
-  --bg-color: #fff0f5;
-  --panel-bg: #ffffff;
-  --text-main: #554455;
-  --accent: #ff69b4;
-  --secondary: #ffb7c5;
-  --font-main: 'Helvetica Neue', sans-serif;
-  --border-radius: 12px;
-  --border-style: 2px solid rgba(255, 105, 180, 0.2);
+[data-theme='horror'] {
+  --color-bg-main: #0a0505;
+  /* Very dark red/black */
+  --color-bg-panel: #1a0b0b;
+  /* Dark red panel */
+  --color-text-main: #e5e5e5;
+  --color-text-muted: #7f1d1d;
+  /* Red-900 text */
+  --color-accent: #dc2626;
+  /* Red-600 */
+  --color-border: #450a0a;
+  /* Red-950 border */
 }
 
-* {
-  box-sizing: border-box;
-  transition: all 0.3s ease;
+[data-theme='romance'] {
+  --color-bg-main: #1f1016;
+  /* Dark pink/rose bg */
+  --color-bg-panel: #2e1a22;
+  /* Rose panel */
+  --color-text-main: #fce7f3;
+  /* Pink-100 */
+  --color-text-muted: #be185d;
+  /* Pink-700 */
+  --color-accent: #db2777;
+  /* Pink-600 */
+  --color-border: #831843;
+  /* Pink-900 */
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  font-family: var(--font-main);
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* Utilities */
+.delay-100 {
+  animation-delay: 100ms;
 }
 
-#root {
-  height: 100%;
-  width: 100%;
+.delay-200 {
+  animation-delay: 200ms;
 }
 
-.game-container {
-  display: grid;
-  grid-template-columns: 260px 1fr 280px;
-  height: 100%;
-  gap: 10px;
-  padding: 10px;
+.delay-300 {
+  animation-delay: 300ms;
 }
 
-.panel {
-  background-color: var(--panel-bg);
-  border: var(--border-style);
-  border-radius: var(--border-radius);
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-h3 {
-  margin-top: 0;
-  color: var(--accent);
-  font-size: 0.85em;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-bottom: 1px solid var(--secondary);
-  padding-bottom: 8px;
-  margin-bottom: 15px;
+::-webkit-scrollbar-track {
+  background: var(--color-bg-main);
 }
 
-/* --- LEFT PANEL --- */
-.avatar-placeholder {
-  width: 80px;
-  height: 80px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--secondary);
-  border-radius: 50%;
-  margin: 0 auto 20px auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2em;
-}
-
-.stat-row {
-  margin-bottom: 12px;
-}
-
-.stat-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8em;
-  margin-bottom: 4px;
-}
-
-.progress-bar {
-  height: 6px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  width: 0%;
-  transition: width 0.5s ease;
-}
-
-.status-effects {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.status-tag {
-  font-size: 0.7em;
-  padding: 3px 8px;
-  background: var(--secondary);
-  color: var(--bg-color);
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-/* --- CENTER PANEL --- */
-.chat-area {
-  flex-grow: 1;
-  overflow-y: auto;
-  margin-bottom: 15px;
-  padding-right: 5px;
-}
-
-.message {
-  margin-bottom: 15px;
-  line-height: 1.5;
-  font-size: 0.95em;
-}
-
-.msg-ai {
-  color: var(--text-main);
-}
-
-.msg-user {
-  text-align: right;
-  color: var(--accent);
-  font-weight: bold;
-  opacity: 0.8;
-}
-
-.msg-system {
-  font-family: var(--font-mono);
-  font-size: 0.8em;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 8px;
-  border-left: 3px solid var(--accent);
-  margin: 10px 0;
-}
-
-.input-area {
-  display: flex;
-  gap: 10px;
-}
-
-input[type="text"] {
-  flex-grow: 1;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border: var(--border-style);
-  color: var(--text-main);
-  font-family: inherit;
-  outline: none;
-}
-
-button {
-  padding: 0 20px;
-  background: var(--accent);
-  color: var(--panel-bg);
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: var(--border-radius);
-}
-
-/* --- RIGHT PANEL --- */
-.inventory-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.inv-item {
-  aspect-ratio: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--secondary);
-  border-radius: var(--border-radius);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s;
-}
-
-.inv-item:hover {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-.item-icon {
-  font-size: 1.5em;
-  margin-bottom: 5px;
-}
-
-.item-name {
-  font-size: 0.65em;
-  text-align: center;
-  line-height: 1.1;
-  padding: 0 2px;
-}
-
-/* Tooltip */
-.inv-item .tooltip {
-  visibility: hidden;
-  width: 180px;
-  background-color: var(--panel-bg);
-  color: var(--text-main);
-  text-align: left;
-  border: var(--border-style);
-  padding: 8px;
-  position: absolute;
-  z-index: 10;
-  top: 100%;
-  right: 0;
-  opacity: 0;
-  transition: opacity 0.3s;
-  font-size: 0.8em;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
-
-.inv-item:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-
-.tag-pill {
-  display: inline-block;
-  background: var(--accent);
-  color: var(--panel-bg);
-  padding: 1px 4px;
-  border-radius: 2px;
-  font-size: 0.8em;
-  margin-right: 3px;
-  margin-top: 3px;
-}
-
-/* --- DEBUG BAR --- */
-.debug-bar {
-  padding: 8px;
-  background: #000;
-  display: flex;
-  gap: 10px;
-  font-size: 0.8em;
-  justify-content: center;
-}
-
-.debug-btn {
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-  padding: 4px 10px;
-  cursor: pointer;
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
   border-radius: 4px;
 }
 
-.debug-btn:hover {
-  background: #555;
-}
-
-/* --- SIDE PANEL (DRAWER) --- */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 999;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.overlay.open {
-  opacity: 1;
-  visibility: visible;
-}
-
-.side-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 350px;
-  /* 1/3 to 1/4 screen width */
-  height: 100%;
-  z-index: 1000;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5);
-  padding: 15px;
-  background-color: var(--panel-bg);
-  color: var(--text-main);
-  border-right: var(--border-style);
-  overflow-y: auto;
-}
-
-.side-panel.open {
-  transform: translateX(0);
-}
-
-/* --- AVATAR TRIGGER --- */
-.avatar-trigger {
-  width: 80px;
-  height: 80px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--secondary);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2em;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-.avatar-trigger:hover {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.05);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
