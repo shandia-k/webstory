@@ -64,11 +64,102 @@ body {
 }
 
 .game-container {
-  display: grid;
-  grid-template-columns: 300px 1fr;
+  display: flex;
   height: 100%;
   gap: 10px;
   padding: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.left-panel-wrapper {
+  width: 300px;
+  transition: width 0.5s ease-in-out, padding 0.5s ease-in-out, margin 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.left-panel-wrapper.closed {
+  width: 0px;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+/* Ensure the panel inside fills the wrapper */
+.left-panel-wrapper .panel {
+  height: 100%;
+  width: 300px; /* Force width to stay constant while wrapper clips it */
+}
+
+/* Floating Avatar Button */
+.avatar-toggle-btn {
+  position: fixed; /* Fixed relative to viewport to handle dock mode correctly */
+  z-index: 2000; /* Higher than panel */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  /* Shared transitions */
+  transition:
+    left 0.5s ease-in-out,
+    top 0.5s ease-in-out,
+    width 0.5s ease-in-out,
+    height 0.5s ease-in-out,
+    border-radius 0.5s ease-in-out,
+    background-color 0.5s ease,
+    border-color 0.5s ease,
+    transform 0.5s ease-in-out;
+
+  /* OPEN STATE: Avatar style */
+  top: 85px; /* Within the game container padding + header offset */
+  left: 130px; /* Centered in the 300px panel (approx) */
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--secondary);
+  font-size: 2em;
+}
+
+/* CLOSED STATE: Docked top-left */
+.avatar-toggle-btn.closed {
+  top: 0;
+  left: 0;
+  width: 60px; /* Approx h-14 w-16 equivalent */
+  height: 40px; /* Height of debug bar approx */
+  border-radius: 0 0 15px 0; /* Rounded bottom-right */
+
+  background: var(--panel-bg);
+  border: 1px solid var(--secondary);
+  border-left: none;
+  border-top: none;
+
+  font-size: 1.2em; /* Smaller icon */
+}
+
+.avatar-toggle-btn:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure header text isn't hidden by docked button */
+.debug-bar {
+  padding-left: 70px; /* Space for the docked button */
+  transition: padding-left 0.5s ease-in-out;
+}
+
+.center-panel-wrapper {
+  flex-grow: 1;
+  min-width: 0; /* Flexbox text overflow fix */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
