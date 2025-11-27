@@ -1,233 +1,419 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useGameEngineV2 } from './hooks/useGameEngineV2';
 import {
     Menu,
     X,
     Zap,
     Shield,
     Activity,
-    Box,
     ChevronRight,
     Send,
     User,
-    MoreHorizontal
+    MoreHorizontal,
+    AlertTriangle
 } from 'lucide-react';
 
 export default function App() {
     // Default open
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [text, setText] = useState("");
-    const fullText = "Hujan neon membasahi jaket sintetikmu. Drone polisi berpatroli di atas, memindai setiap sudut lorong gelap ini.";
+
+    // Use the new V2 Engine
+    const {
+        stats,
+        inventory,
+        quest,
+        history,
+        isProcessing,
+        handleAction,
+        genre,
+        lastOutcome, // SUCCESS, FAILURE, or null
+        gameOver,
+        resetGame,
+        setGenre
+    } = useGameEngineV2();
+
+    const [gameStarted, setGameStarted] = useState(false);
+    const [inputValue, setInputValue] = useState("");
     const scrollRef = useRef(null);
 
-    // Efek mengetik yang lebih halus
+    // Auto-scroll to bottom
     useEffect(() => {
-        let index = 0;
-        const timer = setInterval(() => {
-            setText(fullText.slice(0, index));
-            index++;
-            if (index > fullText.length) clearInterval(timer);
-        }, 30);
-        return () => clearInterval(timer);
-    }, []);
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [history, isProcessing]);
+
+    const handleSend = () => {
+        if (inputValue.trim()) {
+            handleAction(inputValue);
+            setInputValue("");
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') handleSend();
+    };
+
+    // Determine feedback styles
+    let feedbackClass = "";
+    if (lastOutcome === 'SUCCESS') feedbackClass = "ring-4 ring-emerald-500/50 bg-emerald-500/20";
+    if (lastOutcome === 'FAILURE') feedbackClass = "ring-4 ring-red-500/50 bg-red-500/20 animate-shake";
 
     return (
-        <div className="flex h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+        <div
+            data-theme={genre}
+            className={`flex h-screen bg-theme-main text-theme-text font-sans selection:bg-theme-accent/30 selection:text-theme-accent transition-all duration-300 ${feedbackClass}`}
+        >
+            {!gameStarted ? (
+                <GenreSelection onSelect={(g) => {
+                    resetGame(g);
+                    setGameStarted(true);
+                }} />
+            ) : (
+                <>
+                    {/* --- GAME OVER OVERLAY --- */}
+                    {gameOver && (
+                        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-1000">
+                            <div className="max-w-md w-full bg-theme-panel border border-red-500/50 rounded-2xl p-8 text-center shadow-2xl shadow-red-900/20 relative overflow-hidden">
+                                {/* Background Pulse */}
+                                <div className="absolute inset-0 bg-red-500/5 animate-pulse" />
 
-            {/* --- MOBILE OVERLAY --- */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
+                                <div className="relative z-10 flex flex-col items-center gap-6">
+                                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-2 animate-bounce">
+                                        <AlertTriangle size={40} />
+                                    </div>
 
-            {/* --- SIDEBAR (Clean & Structured) --- */}
-            <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50
-        bg-zinc-900 border-r border-zinc-800
-        transform transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'}
-        flex flex-col
-      `}>
+                                    <div className="space-y-2">
+                                        <h2 className="text-3xl font-bold text-white tracking-widest uppercase">Signal Lost</h2>
+                                        <p className="text-red-400 font-mono text-sm">Vital signs critical. Connection terminated.</p>
+                                    </div>
 
-                {/* Header Sidebar */}
-                <div className="h-16 flex items-center px-6 border-b border-zinc-800 justify-between min-w-[18rem]">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
-                            N
-                        </div>
-                        <span className="font-semibold text-zinc-100 tracking-tight">Nexus RPG</span>
-                    </div>
-                    {/* Close button for mobile */}
-                    <button
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="lg:hidden text-zinc-500 hover:text-zinc-300"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
+                                    <div className="w-full h-px bg-red-500/20" />
 
-                {/* Content Sidebar */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 min-w-[18rem]">
-
-                    {/* Profile Section */}
-                    <div className="flex items-center gap-4 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                        <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-zinc-400">
-                            <User size={20} />
-                        </div>
-                        <div>
-                            <div className="text-sm font-medium text-zinc-100">Operative 7</div>
-                            <div className="text-xs text-indigo-400 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                Online
+                                    <button
+                                        onClick={resetGame}
+                                        className="group relative px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/30 w-full"
+                                    >
+                                        <span className="relative z-10 flex items-center justify-center gap-2">
+                                            <Zap size={18} />
+                                            Reboot System
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Stats - Minimalist Lines */}
-                    <div>
-                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Status</h3>
-                        <div className="space-y-4">
-                            <StatItem icon={<Activity size={14} />} label="Health" value={80} color="bg-emerald-500" />
-                            <StatItem icon={<Zap size={14} />} label="Energy" value={60} color="bg-amber-500" />
-                            <StatItem icon={<Shield size={14} />} label="Shield" value={40} color="bg-indigo-500" />
-                        </div>
-                    </div>
-
-                    {/* Inventory - Clean List */}
-                    <div>
-                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Inventory</h3>
-                        <div className="space-y-2">
-                            <InventoryItem label="Plasma Cutter" count={1} />
-                            <InventoryItem label="Stimpack" count={3} />
-                            <InventoryItem label="Encrypted Datapad" count={1} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Sidebar */}
-                <div className="p-4 border-t border-zinc-800 text-xs text-zinc-600 text-center min-w-[18rem]">
-                    v2.0.4 • System Stable
-                </div>
-            </aside>
-
-
-            {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 flex flex-col min-w-0 bg-zinc-950 relative">
-
-                {/* Top Navigation Bar */}
-                <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur sticky top-0 z-30">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 -ml-2 text-zinc-400 hover:text-zinc-100 rounded-lg hover:bg-zinc-800 transition-colors"
-                        >
-                            <Menu size={20} />
-                        </button>
-                        <div className="flex items-center text-sm text-zinc-500 gap-2">
-                            <span>Mission</span>
-                            <ChevronRight size={14} />
-                            <span className="text-zinc-200 font-medium">Neon Rain</span>
-                        </div>
-                    </div>
-
-                    <button className="text-zinc-500 hover:text-zinc-300 p-2 rounded-lg hover:bg-zinc-900">
-                        <MoreHorizontal size={20} />
-                    </button>
-                </header>
-
-                {/* Narrative Feed Area */}
-                <div className="flex-1 overflow-y-auto p-4 lg:p-0" ref={scrollRef}>
-                    <div className="max-w-3xl mx-auto py-8 lg:py-12 space-y-8">
-
-                        {/* System Message - Clean Badge Style */}
-                        <div className="flex justify-center">
-                            <span className="text-xs font-medium px-3 py-1 rounded-full bg-zinc-900 text-zinc-500 border border-zinc-800">
-                                System initialized • Sector 7
-                            </span>
-                        </div>
-
-                        {/* Narrative Block */}
-                        <div className="group">
-                            <div className="pl-4 border-l-2 border-indigo-500/50 group-hover:border-indigo-500 transition-colors">
-                                <p className="text-lg leading-relaxed text-zinc-100 font-serif tracking-wide">
-                                    {text}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Action/Response Block */}
-                        <div className="flex flex-col items-end gap-2">
-                            <div className="bg-zinc-800 text-zinc-200 px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%] shadow-sm">
-                                <p className="text-sm">Saya memeriksa [Stimpack]. Apa efek sampingnya?</p>
-                            </div>
-                            <span className="text-[10px] text-zinc-600 mr-2">10:42 AM</span>
-                        </div>
-
-                        {/* System Response - Card Style */}
-                        <div className="bg-zinc-900/50 rounded-xl p-5 border border-zinc-800 flex gap-4 items-start">
-                            <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
-                                <Box size={20} />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-zinc-200 mb-1">Stimpack Analysis</h4>
-                                <p className="text-sm text-zinc-400 leading-relaxed">
-                                    Injeksi adrenalin sintetik. Meningkatkan refleks sebesar 50% selama 30 detik.
-                                    <br />
-                                    <span className="text-amber-500/80 mt-1 block text-xs">⚠️ Peringatan: Menyebabkan kelelahan ringan setelah efek habis.</span>
-                                </p>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                {/* Input Area - Floating & Clean */}
-                <div className="p-4 lg:p-6 pb-6 lg:pb-10">
-                    <div className="max-w-3xl mx-auto relative">
-                        <input
-                            type="text"
-                            placeholder="Apa tindakanmu selanjutnya?"
-                            className="w-full bg-zinc-900 text-zinc-200 placeholder:text-zinc-600 pl-5 pr-14 py-4 rounded-xl border border-zinc-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none shadow-lg shadow-black/20 transition-all"
+                    {/* --- MOBILE OVERLAY --- */}
+                    {isSidebarOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+                            onClick={() => setIsSidebarOpen(false)}
                         />
-                        <button className="absolute right-2 top-2 p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
-                            <Send size={18} />
-                        </button>
-                    </div>
-                    <div className="text-center mt-3">
-                        <p className="text-[10px] text-zinc-600">Tekan Enter untuk mengirim • Tab untuk autocomplete</p>
-                    </div>
-                </div>
+                    )}
 
-            </main>
+                    {/* --- SIDEBAR (Clean & Structured) --- */}
+                    <aside className={`
+                        fixed lg:static inset-y-0 left-0 z-50
+                        bg-theme-panel border-r border-theme-border
+                        transform transition-all duration-300 ease-in-out
+                        ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-none lg:overflow-hidden'}
+                        flex flex-col
+                    `}>
+
+                        {/* Header Sidebar */}
+                        <div className="h-16 flex items-center px-6 border-b border-theme-border justify-between min-w-[18rem]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-theme-accent rounded-lg flex items-center justify-center text-white font-bold">
+                                    N
+                                </div>
+                                <span className="font-semibold text-theme-text tracking-tight">Nexus RPG</span>
+                            </div>
+                            {/* Close button for mobile */}
+                            <button
+                                onClick={() => setIsSidebarOpen(false)}
+                                className="lg:hidden text-theme-muted hover:text-theme-text"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content Sidebar */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 min-w-[18rem]">
+
+                            {/* Profile Section */}
+                            <div className="flex items-center gap-4 p-3 bg-black/20 rounded-xl border border-theme-border">
+                                <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-theme-muted">
+                                    <User size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-theme-text">Operative 7</div>
+                                    <div className="text-xs text-theme-accent flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse" />
+                                        Online
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stats - Dynamic */}
+                            <div>
+                                <h3 className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-4">Status</h3>
+                                <div className="space-y-4">
+                                    {Object.entries(stats).map(([key, value]) => {
+                                        // Dynamic Config based on Stat Name
+                                        let icon = <Activity size={14} />;
+                                        let color = "bg-theme-accent";
+                                        let label = key.charAt(0).toUpperCase() + key.slice(1);
+
+                                        if (key === 'health') { icon = <Activity size={14} />; color = "bg-emerald-500"; }
+                                        if (key === 'energy') { icon = <Zap size={14} />; color = "bg-amber-500"; }
+                                        if (key === 'shield') { icon = <Shield size={14} />; color = "bg-blue-500"; }
+                                        if (key === 'sanity') { icon = <div className="text-xs">🧠</div>; color = "bg-purple-500"; }
+                                        if (key === 'stamina') { icon = <div className="text-xs">⚡</div>; color = "bg-yellow-500"; }
+                                        if (key === 'mood') { icon = <div className="text-xs">❤️</div>; color = "bg-pink-500"; }
+                                        if (key === 'charm') { icon = <div className="text-xs">✨</div>; color = "bg-rose-400"; }
+
+                                        return (
+                                            <StatItem key={key} icon={icon} label={label} value={value} color={color} />
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Inventory - Dynamic & Clickable */}
+                            <div>
+                                <h3 className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-4">Inventory</h3>
+                                <div className="space-y-2">
+                                    {inventory.map((item, idx) => (
+                                        <InventoryItem
+                                            key={idx}
+                                            label={item.name}
+                                            count={item.count}
+                                            tags={item.tags}
+                                            icon={item.icon}
+                                            value={item.value}
+                                            max_value={item.max_value}
+                                            onClick={() => handleAction(`inspect:${item.name}`)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Footer Sidebar */}
+                        <div className="p-4 border-t border-theme-border text-xs text-theme-muted text-center min-w-[18rem]">
+                            v2.0.4 • System Stable
+                        </div>
+                    </aside>
+
+
+                    {/* --- MAIN CONTENT --- */}
+                    <main className="flex-1 flex flex-col min-w-0 bg-transparent relative transition-colors duration-500">
+
+                        {/* Top Navigation Bar */}
+                        <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-theme-border bg-theme-main/80 backdrop-blur sticky top-0 z-30 transition-colors duration-500">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                    className="p-2 -ml-2 text-theme-muted hover:text-theme-text rounded-lg hover:bg-theme-panel transition-colors"
+                                >
+                                    <Menu size={20} />
+                                </button>
+                                <div className="flex items-center text-sm text-theme-muted gap-2">
+                                    <span>Mission</span>
+                                    <ChevronRight size={14} />
+                                    <span className="text-theme-text font-medium">{quest}</span>
+                                </div>
+                            </div>
+
+                            <button className="text-theme-muted hover:text-theme-text p-2 rounded-lg hover:bg-theme-panel">
+                                <MoreHorizontal size={20} />
+                            </button>
+                        </header>
+
+                        {/* Narrative Feed Area */}
+                        <div className="flex-1 overflow-y-auto p-4 lg:p-0" ref={scrollRef}>
+                            <div className="max-w-3xl mx-auto py-8 lg:py-12 space-y-8">
+
+                                {history.map((msg) => {
+                                    if (msg.role === 'system') {
+                                        return (
+                                            <div key={msg.id} className="flex justify-center">
+                                                <span className="text-xs font-medium px-3 py-1 rounded-full bg-theme-panel text-theme-muted border border-theme-border">
+                                                    {msg.content}
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (msg.role === 'ai') {
+                                        return (
+                                            <div key={msg.id} className="group">
+                                                <div className="pl-4 border-l-2 border-theme-accent/50 group-hover:border-theme-accent transition-colors">
+                                                    <p className="text-lg leading-relaxed text-theme-text font-serif tracking-wide">
+                                                        {msg.content}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (msg.role === 'user') {
+                                        return (
+                                            <div key={msg.id} className="flex flex-col items-end gap-2">
+                                                <div className="bg-theme-panel text-theme-text px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%] shadow-sm border border-theme-border">
+                                                    <p className="text-sm">{msg.content}</p>
+                                                </div>
+                                                <span className="text-[10px] text-theme-muted mr-2">{msg.timestamp}</span>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })}
+
+                                {isProcessing && (
+                                    <div className="flex items-center gap-2 pl-4 py-2">
+                                        <div className="w-2 h-2 bg-theme-accent rounded-full animate-typing delay-100" />
+                                        <div className="w-2 h-2 bg-theme-accent rounded-full animate-typing delay-200" />
+                                        <div className="w-2 h-2 bg-theme-accent rounded-full animate-typing delay-300" />
+                                        <span className="text-xs text-theme-muted font-mono ml-2 animate-pulse">Nexus processing...</span>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+
+                        {/* Input Area - Floating & Clean */}
+                        <div className="p-4 lg:p-6 pb-6 lg:pb-10">
+                            <div className="max-w-3xl mx-auto relative">
+                                <input
+                                    type="text"
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Apa tindakanmu selanjutnya?"
+                                    className="w-full bg-theme-panel text-theme-text placeholder:text-theme-muted pl-5 pr-14 py-4 rounded-xl border border-theme-border focus:border-theme-accent focus:ring-1 focus:ring-theme-accent focus:outline-none shadow-lg shadow-black/20 transition-all"
+                                />
+                                <button
+                                    onClick={handleSend}
+                                    className="absolute right-2 top-2 p-2 bg-theme-accent hover:opacity-90 text-white rounded-lg transition-colors"
+                                >
+                                    <Send size={18} />
+                                </button>
+                            </div>
+                            <div className="text-center mt-3">
+                                <p className="text-[10px] text-theme-muted">Tekan Enter untuk mengirim • Tab untuk autocomplete</p>
+                            </div>
+                        </div>
+
+                    </main>
+                </>
+            )}
         </div>
     );
 }
 
-// --- Sub-Components for Cleaner Code ---
+// --- Sub-Components ---
 
 function StatItem({ icon, label, value, color }) {
     return (
         <div className="group">
             <div className="flex justify-between items-center mb-1.5">
-                <div className="flex items-center gap-2 text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                <div className="flex items-center gap-2 text-theme-muted group-hover:text-theme-text transition-colors">
                     {icon}
                     <span className="text-xs font-medium">{label}</span>
                 </div>
-                <span className="text-xs font-mono text-zinc-500">{value}%</span>
+                <span className="text-xs font-mono text-theme-muted">{value}%</span>
             </div>
-            <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-black/30 rounded-full overflow-hidden">
                 <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${value}%` }} />
             </div>
         </div>
     );
 }
 
-function InventoryItem({ label, count }) {
+function InventoryItem({ label, count, tags, icon, value, max_value, onClick }) {
     return (
-        <div className="flex items-center justify-between p-2.5 rounded-lg hover:bg-zinc-800/50 transition-colors cursor-pointer group border border-transparent hover:border-zinc-800">
-            <span className="text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors">{label}</span>
-            <span className="text-xs font-mono bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded group-hover:bg-zinc-700 group-hover:text-zinc-300 transition-colors">x{count}</span>
+        <div
+            onClick={onClick}
+            className="flex flex-col p-2.5 rounded-lg hover:bg-black/20 transition-colors cursor-pointer group border border-transparent hover:border-theme-border"
+        >
+            <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                    <span className="text-lg">{icon || '📦'}</span>
+                    <span className="text-sm text-theme-muted group-hover:text-theme-text transition-colors">{label}</span>
+                </div>
+                <span className="text-xs font-mono bg-black/40 text-theme-muted px-2 py-0.5 rounded group-hover:bg-black/60 group-hover:text-theme-text transition-colors">x{count}</span>
+            </div>
+
+            {/* Durability Bar */}
+            {value !== undefined && max_value !== undefined && (
+                <div className="w-full h-1 bg-black/40 rounded-full mb-1.5 overflow-hidden">
+                    <div
+                        className={`h-full rounded-full transition-all duration-500 ${value < 30 ? 'bg-red-500' : 'bg-theme-accent'}`}
+                        style={{ width: `${(value / max_value) * 100}%` }}
+                    />
+                </div>
+            )}
+
+            {tags && tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                    {tags.map((tag, i) => (
+                        <span key={i} className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-theme-accent/10 text-theme-accent border border-theme-accent/20">
+                            {tag}
+                        </span>
+                    ))}
+                </div>
+            )}
         </div>
+    );
+}
+
+function GenreSelection({ onSelect }) {
+    return (
+        <div className="w-full h-full bg-white text-black flex flex-col items-center justify-center p-8 animate-in fade-in duration-700">
+            <div className="max-w-4xl w-full space-y-12">
+                <div className="text-center space-y-4">
+                    <h1 className="text-4xl md:text-6xl font-bold tracking-tighter">PROTOCOL OMEGA</h1>
+                    <p className="text-gray-500 font-mono text-sm tracking-widest uppercase">Select Simulation Parameters</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <GenreCard
+                        title="SCI-FI"
+                        desc="Cybernetics, Neon, Dystopia"
+                        onClick={() => onSelect('scifi')}
+                    />
+                    <GenreCard
+                        title="HORROR"
+                        desc="Fear, Darkness, Survival"
+                        onClick={() => onSelect('horror')}
+                    />
+                    <GenreCard
+                        title="ROMANCE"
+                        desc="Emotion, Drama, Connection"
+                        onClick={() => onSelect('romance')}
+                    />
+                </div>
+
+                <div className="text-center pt-12">
+                    <p className="text-xs text-gray-400 font-mono">v2.1.0 • SYSTEM READY</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function GenreCard({ title, desc, onClick }) {
+    return (
+        <button
+            onClick={onClick}
+            className="group relative h-64 border border-gray-200 hover:border-black transition-all duration-500 bg-gray-50 hover:bg-white flex flex-col items-center justify-center gap-4 overflow-hidden"
+        >
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
+            <h3 className="text-2xl font-bold tracking-tight group-hover:scale-110 transition-transform duration-500">{title}</h3>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">{desc}</p>
+        </button>
     );
 }

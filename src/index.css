@@ -1,14 +1,140 @@
 @import "tailwindcss";
 
+@theme {
+  /* Colors - Automatically creates bg-theme-main, text-theme-main, etc. */
+  --color-theme-main: var(--color-bg-main);
+  --color-theme-panel: var(--color-bg-panel);
+  --color-theme-text: var(--color-text-main);
+  --color-theme-muted: var(--color-text-muted);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-border: var(--color-border);
+
+  /* Animations */
+  --animate-typing: typing 1s infinite ease-in-out;
+  --animate-shake: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+
+  /* Keyframes */
+  @keyframes typing {
+
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+
+    50% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  @keyframes shake {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-4px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+}
+
+/* Base Variables */
+:root {
+  /* Default (Sci-Fi / Cyberpunk) */
+  --color-bg-main: #09090b;
+  /* zinc-950 */
+  --color-bg-panel: #18181b;
+  /* zinc-900 */
+  --color-text-main: #d4d4d8;
+  /* zinc-300 */
+  --color-text-muted: #71717a;
+  /* zinc-500 */
+  --color-accent: #4f46e5;
+  /* indigo-600 */
+  --color-border: #27272a;
+  /* zinc-800 */
+}
+
+/* Theme Overrides */
+[data-theme='scifi'] {
+  --color-bg-main: #09090b;
+  --color-bg-panel: #18181b;
+  --color-text-main: #d4d4d8;
+  --color-text-muted: #71717a;
+  --color-accent: #4f46e5;
+  --color-border: #27272a;
+}
+
+[data-theme='horror'] {
+  --color-bg-main: #0a0505;
+  /* Very dark red/black */
+  --color-bg-panel: #1a0b0b;
+  /* Dark red panel */
+  --color-text-main: #e5e5e5;
+  --color-text-muted: #7f1d1d;
+  /* Red-900 text */
+  --color-accent: #dc2626;
+  /* Red-600 */
+  --color-border: #450a0a;
+  /* Red-950 border */
+}
+
+[data-theme='romance'] {
+  --color-bg-main: #1f1016;
+  /* Dark pink/rose bg */
+  --color-bg-panel: #2e1a22;
+  /* Rose panel */
+  --color-text-main: #fce7f3;
+  /* Pink-100 */
+  --color-text-muted: #be185d;
+  /* Pink-700 */
+  --color-accent: #db2777;
+  /* Pink-600 */
+  --color-border: #831843;
+  /* Pink-900 */
+}
+
+/* Utilities */
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: var(--color-bg-main);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--color-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--color-text-muted);
 }
