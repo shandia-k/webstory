@@ -50,10 +50,12 @@ body {
   background-color: var(--bg-color);
   color: var(--text-main);
   font-family: var(--font-main);
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--secondary);
+  padding-bottom: 8px;
+  margin-bottom: 15px;
 }
 
 #root {
@@ -63,7 +65,7 @@ body {
 
 .game-container {
   display: grid;
-  grid-template-columns: 260px 1fr 280px;
+  grid-template-columns: 300px 1fr;
   height: 100%;
   gap: 10px;
   padding: 10px;
@@ -192,6 +194,7 @@ input[type="text"] {
   color: var(--text-main);
   font-family: inherit;
   outline: none;
+
 }
 
 button {
@@ -204,25 +207,22 @@ button {
   border-radius: var(--border-radius);
 }
 
-/* --- RIGHT PANEL --- */
+/* --- INVENTORY (MOVED TO LEFT) --- */
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-bottom: 20px;
 }
 
 .inv-item {
-  aspect-ratio: 1;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--secondary);
   border-radius: var(--border-radius);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.8em;
   cursor: pointer;
-  position: relative;
   transition: all 0.2s;
 }
 

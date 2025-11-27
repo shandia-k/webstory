@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import LeftPanel from './components/LeftPanel';
 import CenterPanel from './components/CenterPanel';
-import RightPanel from './components/RightPanel';
+
 
 function App() {
     const {
@@ -28,15 +28,13 @@ function App() {
                     avatar={gameData.avatar}
                     stats={gameData.stats}
                     status={gameData.status}
+                    items={gameData.items}
+                    onInspect={inspectItem}
+                    quest={gameData.quest}
                 />
                 <CenterPanel
                     chatLog={chatLog}
                     onInput={handleInput}
-                />
-                <RightPanel
-                    items={gameData.items}
-                    quest={gameData.quest}
-                    onInspect={inspectItem}
                 />
             </div>
         </>
