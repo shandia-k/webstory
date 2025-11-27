@@ -1,9 +1,10 @@
 import React from 'react';
 
-export default function LeftPanel({ avatar, stats, status, items, onInspect, quest }) {
+export default function LeftPanel({ stats, status, items, onInspect, quest }) {
     return (
         <div className="panel">
-            <div className="avatar-placeholder" id="avatar-icon">{avatar}</div>
+            {/* Avatar is now a floating button handled by App.jsx */}
+            <div style={{ marginTop: '85px' }}></div>
             <h3>Character Stats</h3>
             <div id="dynamic-stats">
                 {Object.entries(stats).map(([key, val]) => (

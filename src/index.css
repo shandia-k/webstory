@@ -64,11 +64,74 @@ body {
 }
 
 .game-container {
-  display: grid;
-  grid-template-columns: 300px 1fr;
+  display: flex;
   height: 100%;
   gap: 10px;
   padding: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.left-panel-wrapper {
+  width: 300px;
+  transition: width 0.5s ease-in-out, padding 0.5s ease-in-out, margin 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.left-panel-wrapper.closed {
+  width: 0px;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+/* Ensure the panel inside fills the wrapper */
+.left-panel-wrapper .panel {
+  height: 100%;
+  width: 300px; /* Force width to stay constant while wrapper clips it */
+}
+
+/* Floating Avatar Button */
+.avatar-toggle-btn {
+  position: absolute;
+  top: 25px; /* Aligned with where it would be */
+  z-index: 1000;
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  cursor: pointer;
+  transition: all 0.5s ease-in-out;
+  /* Default position when panel is open (centered in 300px panel + padding) */
+  left: 120px; /* (300px panel + 10px padding / 2) - 40px half width approx? Adjust later */
+}
+
+.avatar-toggle-btn.closed {
+  left: 10px;
+  background: var(--panel-bg);
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.avatar-toggle-btn:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.center-panel-wrapper {
+  flex-grow: 1;
+  min-width: 0; /* Flexbox text overflow fix */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
