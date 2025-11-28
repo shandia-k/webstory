@@ -1,10 +1,12 @@
 import React from 'react';
 import { X, User, Activity, Zap, Shield } from 'lucide-react';
-import { UI_TEXT } from '../constants/strings';
-import { StatItem } from './StatItem';
-import { InventoryItem } from './InventoryItem';
+import { useGame } from '../../context/GameContext';
+import { UI_TEXT } from '../../constants/strings';
+import { StatItem } from '../game/StatItem';
+import { InventoryItem } from '../game/InventoryItem';
 
-export function Sidebar({ isSidebarOpen, setIsSidebarOpen, stats, inventory, handleAction }) {
+export function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
+    const { stats, inventory, handleAction } = useGame();
     return (
         <aside className={`
             fixed lg:static inset-y-0 left-0 z-50

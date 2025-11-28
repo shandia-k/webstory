@@ -1,20 +1,18 @@
 import React from 'react';
 import { Menu, ChevronRight, MoreHorizontal, Download, Upload, Zap, X } from 'lucide-react';
-import { UI_TEXT } from '../constants/strings';
+import { useGame } from '../../context/GameContext';
+import { UI_TEXT } from '../../constants/strings';
 
 export function Header({
     isSidebarOpen,
     setIsSidebarOpen,
-    quest,
     isMenuOpen,
     setIsMenuOpen,
     handleSaveGame,
     handleLoadClick,
-    resetGame,
-    genre,
-    quitGame,
     setGameStarted
 }) {
+    const { quest, resetGame, genre, quitGame } = useGame();
     return (
         <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-theme-border bg-theme-main/80 backdrop-blur sticky top-0 z-30 transition-colors duration-500">
             <div className="flex items-center gap-4">

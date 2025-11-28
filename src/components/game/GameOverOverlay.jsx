@@ -1,8 +1,10 @@
 import React from 'react';
 import { AlertTriangle, Zap } from 'lucide-react';
-import { UI_TEXT } from '../constants/strings';
+import { useGame } from '../../context/GameContext';
+import { UI_TEXT } from '../../constants/strings';
 
-export function GameOverOverlay({ gameOver, resetGame, genre }) {
+export function GameOverOverlay() {
+    const { gameOver, resetGame, genre } = useGame();
     if (!gameOver) return null;
 
     return (

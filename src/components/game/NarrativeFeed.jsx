@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
+import { useGame } from '../../context/GameContext';
 
-export function NarrativeFeed({ history, isProcessing, handleSend }) {
+export function NarrativeFeed({ handleSend }) {
+    const { history, isProcessing } = useGame();
     const scrollRef = useRef(null);
 
     // Auto-scroll to bottom
@@ -38,7 +40,7 @@ export function NarrativeFeed({ history, isProcessing, handleSend }) {
                     if (msg.role === 'ai') {
                         return (
                             <div key={msg.id} className="group">
-                                <div className="pl-4 border-l-2 border-theme-accent/50 group-hover:border-theme-accent transition-colors">
+                                <div className="pl-4 border-l-2 border-theme-accent-transparent group-hover:border-theme-accent transition-colors">
                                     <p className="text-lg leading-relaxed text-theme-text font-serif tracking-wide">
                                         {msg.content}
                                     </p>

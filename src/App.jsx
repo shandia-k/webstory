@@ -1,18 +1,19 @@
 import React, { useState, useRef } from 'react';
-import { useGameEngineV2 } from './hooks/useGameEngineV2';
+import { useGame } from './context/GameContext';
 import { UI_TEXT } from './constants/strings';
-import { GenreSelection } from './components/GenreSelection';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
-import { NarrativeFeed } from './components/NarrativeFeed';
-import { InputArea } from './components/InputArea';
-import { GameOverOverlay } from './components/GameOverOverlay';
+import { GenreSelection } from './components/game/GenreSelection';
+import { Sidebar } from './components/layout/Sidebar';
+import { Header } from './components/layout/Header';
+import { NarrativeFeed } from './components/game/NarrativeFeed';
+import { InputArea } from './components/game/InputArea';
+import { GameOverOverlay } from './components/game/GameOverOverlay';
+import { saveGameToFile, parseSaveFile } from './utils/fileHandler';
 
 export default function App() {
     // Default open
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    // Use the new V2 Engine
+    // Use Context
     const {
         stats,
         inventory,
@@ -21,14 +22,13 @@ export default function App() {
         isProcessing,
         handleAction,
         genre,
-        lastOutcome, // SUCCESS, FAILURE, or null
+        lastOutcome,
         gameOver,
         resetGame,
-        setGenre,
         quitGame,
         exportSave,
         importSave
-    } = useGameEngineV2();
+    } = useGame();
 
     // Initialize gameStarted based on history (persistence check)
     const [gameStarted, setGameStarted] = useState(() => history.length > 0);
@@ -48,43 +48,15 @@ export default function App() {
         if (e.key === 'Enter') handleSend();
     };
 
+
     // --- SAVE / LOAD HANDLERS ---
     const handleSaveGame = async () => {
-        const data = exportSave();
-        const jsonString = JSON.stringify(data, null, 2);
-        const fileName = `nexus_save_${new Date().toISOString().slice(0, 10)}.json`;
-
         try {
-            // Try File System Access API (Modern Browsers)
-            if ('showSaveFilePicker' in window) {
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: fileName,
-                    types: [{
-                        description: 'Nexus RPG Save File',
-                        accept: { 'application/json': ['.json'] },
-                    }],
-                });
-                const writable = await handle.createWritable();
-                await writable.write(jsonString);
-                await writable.close();
-            } else {
-                // Fallback for browsers that don't support the API
-                const blob = new Blob([jsonString], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
+            const data = exportSave();
+            await saveGameToFile(data);
         } catch (err) {
-            // Ignore abort errors (user cancelled)
-            if (err.name !== 'AbortError') {
-                console.error('Failed to save game:', err);
-                alert(UI_TEXT.UI.ERRORS.SAVE_FAILED);
-            }
+            console.error('Failed to save game:', err);
+            alert(UI_TEXT.UI.ERRORS.SAVE_FAILED);
         } finally {
             setIsMenuOpen(false);
         }
@@ -96,27 +68,24 @@ export default function App() {
         }
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
-                const success = importSave(data);
-                if (success) {
-                    setGameStarted(true);
-                    setIsMenuOpen(false);
-                } else {
-                    alert(UI_TEXT.UI.ERRORS.LOAD_INVALID);
-                }
-            } catch (err) {
-                console.error("Failed to parse save file", err);
-                alert(UI_TEXT.UI.ERRORS.LOAD_ERROR);
+        try {
+            const data = await parseSaveFile(file);
+            const success = importSave(data);
+            if (success) {
+                setGameStarted(true);
+                setIsMenuOpen(false);
+            } else {
+                alert(UI_TEXT.UI.ERRORS.LOAD_INVALID);
             }
-        };
-        reader.readAsText(file);
+        } catch (err) {
+            console.error("Failed to parse save file", err);
+            alert(UI_TEXT.UI.ERRORS.LOAD_ERROR);
+        }
+
         // Reset input so same file can be selected again if needed
         e.target.value = null;
     };
@@ -147,11 +116,7 @@ export default function App() {
                 }} />
             ) : (
                 <>
-                    <GameOverOverlay
-                        gameOver={gameOver}
-                        resetGame={resetGame}
-                        genre={genre}
-                    />
+                    <GameOverOverlay />
 
                     {/* --- MOBILE OVERLAY --- */}
                     {isSidebarOpen && (
@@ -164,9 +129,6 @@ export default function App() {
                     <Sidebar
                         isSidebarOpen={isSidebarOpen}
                         setIsSidebarOpen={setIsSidebarOpen}
-                        stats={stats}
-                        inventory={inventory}
-                        handleAction={handleAction}
                     />
 
                     {/* --- MAIN CONTENT --- */}
@@ -175,22 +137,14 @@ export default function App() {
                         <Header
                             isSidebarOpen={isSidebarOpen}
                             setIsSidebarOpen={setIsSidebarOpen}
-                            quest={quest}
                             isMenuOpen={isMenuOpen}
                             setIsMenuOpen={setIsMenuOpen}
                             handleSaveGame={handleSaveGame}
                             handleLoadClick={handleLoadClick}
-                            resetGame={resetGame}
-                            genre={genre}
-                            quitGame={quitGame}
                             setGameStarted={setGameStarted}
                         />
 
-                        <NarrativeFeed
-                            history={history}
-                            isProcessing={isProcessing}
-                            handleSend={handleSend}
-                        />
+                        <NarrativeFeed handleSend={handleSend} />
 
                         <InputArea
                             inputValue={inputValue}
