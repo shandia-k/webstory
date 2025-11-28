@@ -1,54 +1,49 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { mockLLM } from '../services/mockLLM';
+import { UI_TEXT } from '../constants/strings';
+
+const STORAGE_KEY = 'nexus_rpg_save_v2';
+
+// Helper to load initial state (lazy initialization)
+const loadState = (key, fallback) => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return parsed[key] !== undefined ? parsed[key] : fallback;
+        }
+    } catch (e) {
+        console.error("Failed to load state", e);
+    }
+    return fallback;
+};
 
 export function useGameEngineV2() {
-    // --- PERSISTENCE ---
-    const STORAGE_KEY = 'NEXUS_RPG_V2_STATE';
-
-    // Helper to load state or default
-    const loadState = (key, fallback) => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return parsed[key] !== undefined ? parsed[key] : fallback;
-            }
-        } catch (e) {
-            console.error("Failed to load state", e);
-        }
-        return fallback;
-    };
-
-    // --- CENTRAL GAME STATE ---
-    const [stats, setStats] = useState(() => loadState('stats', {
-        health: 80,
-        energy: 60,
-        shield: 40
-    }));
-
+    // --- CORE STATE ---
+    const [stats, setStats] = useState(() => loadState('stats', { health: 100, energy: 100, shield: 100 }));
     const [inventory, setInventory] = useState(() => loadState('inventory', [
         { name: "Plasma Cutter", count: 1, tags: ["tool", "heat", "weapon"], type: "tool", icon: "🔫" },
         { name: "Stimpack", count: 3, tags: ["consumable", "heal"], type: "consumable", icon: "💉" },
         { name: "Encrypted Datapad", count: 1, tags: ["intel", "encrypted"], type: "intel", icon: "💾" }
     ]));
 
-    const [quest, setQuest] = useState(() => loadState('quest', "Neon Rain"));
-    const [genre, setGenre] = useState(() => loadState('genre', "scifi")); // scifi, horror, romance
+    const [quest, setQuest] = useState(() => loadState('quest', UI_TEXT.CONTENT.QUEST_DEFAULT));
+    const [genre, setGenre] = useState(() => loadState('genre', UI_TEXT.FIXED.GENRE_DEFAULT)); // scifi, horror, romance
     const [lastOutcome, setLastOutcome] = useState(null); // 'SUCCESS', 'FAILURE', 'NEUTRAL'
     const [gameOver, setGameOver] = useState(() => loadState('gameOver', false));
-    const [summary, setSummary] = useState(() => loadState('summary', "Simulation initialized."));
+    const [summary, setSummary] = useState(() => loadState('summary', UI_TEXT.CONTENT.SUMMARY_INIT));
 
     const [history, setHistory] = useState(() => loadState('history', [
         {
             id: 1,
             role: 'system',
-            content: 'System initialized • Sector 7',
+            content: UI_TEXT.CONTENT.HISTORY_SYSTEM_INIT,
             timestamp: '00:00'
         },
         {
             id: 2,
             role: 'ai',
-            content: 'Hujan neon membasahi jaket sintetikmu. Drone polisi berpatroli di atas, memindai setiap sudut lorong gelap ini.',
+            content: UI_TEXT.CONTENT.HISTORY_AI_INIT,
             timestamp: '00:01'
         }
     ]));
@@ -80,7 +75,9 @@ export function useGameEngineV2() {
         const userMsg = {
             id: Date.now(),
             role: 'user',
-            content: input.startsWith('inspect:') ? `Memeriksa ${input.split(':')[1]}...` : input,
+            content: input.startsWith('inspect:')
+                ? UI_TEXT.UI.TEMPLATES.ACTION_INSPECT.replace('{0}', input.split(':')[1])
+                : input,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         setHistory(prev => [...prev, userMsg]);
@@ -90,7 +87,7 @@ export function useGameEngineV2() {
             // 2. Call Mock LLM (Backend Simulation)
             // We pass the current state so the "AI" knows what we have
             // We also pass history, but the LLM will decide whether to use it (On-Demand)
-            const gameState = { stats, inventory, quest, history };
+            const gameState = { stats, inventory, quest, history, summary };
             const response = await mockLLM(input, gameState);
 
             // 3. Process JSON Response
@@ -203,11 +200,11 @@ export function useGameEngineV2() {
 
         setStats({ health: 100, energy: 100, shield: 100 });
         setInventory([]); // Clear first, let AI populate
-        setQuest("Initializing...");
+        setQuest(UI_TEXT.CONTENT.QUEST_INIT);
         setHistory([]);
         setGameOver(false);
         setGenre(targetGenre);
-        setSummary("Simulation initialized.");
+        setSummary(UI_TEXT.CONTENT.SUMMARY_INIT);
 
         // Trigger initialization via AI
         handleAction(`SYSTEM_INIT_GENRE:${targetGenre}`);
@@ -219,11 +216,11 @@ export function useGameEngineV2() {
         // Reset local state to defaults (optional, but good for UI consistency if component doesn't unmount)
         setStats({ health: 80, energy: 60, shield: 40 });
         setInventory([]);
-        setQuest("Neon Rain");
-        setGenre("scifi");
+        setQuest(UI_TEXT.CONTENT.QUEST_DEFAULT);
+        setGenre(UI_TEXT.FIXED.GENRE_DEFAULT);
         setHistory([]);
         setGameOver(false);
-        setSummary("Simulation initialized.");
+        setSummary(UI_TEXT.CONTENT.SUMMARY_INIT);
     }, []);
 
     // --- SAVE/LOAD SYSTEM ---
@@ -246,32 +243,33 @@ export function useGameEngineV2() {
 
     const importSave = useCallback((data) => {
         if (!data || !data.stats || !data.inventory) {
-            console.error("Invalid save file format");
+            console.error(UI_TEXT.UI.ERRORS.IMPORT_INVALID);
             return false;
         }
 
         try {
             setStats(data.stats);
             setInventory(data.inventory);
-            setQuest(data.quest || "Unknown Mission");
-            setGenre(data.genre || "scifi");
+            setQuest(data.quest || UI_TEXT.UI.ERRORS.UNKNOWN_MISSION);
+            setGenre(data.genre || UI_TEXT.FIXED.GENRE_DEFAULT);
             setGameOver(data.gameOver || false);
             setHistory(prev => [
                 ...(data.history || []),
                 {
                     id: Date.now(),
                     role: 'system',
-                    content: 'Game loaded successfully. Type "ringkasan" to view mission progress.',
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    content: UI_TEXT.CONTENT.LOAD_SUCCESS_MSG,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    action: 'ringkasan',
+                    actionLabel: UI_TEXT.UI.BUTTON_SUMMARY
                 }
             ]);
-            setSummary(data.summary || "Simulation restored.");
+            setSummary(data.summary || UI_TEXT.CONTENT.SUMMARY_RESTORED);
 
-            // Force update localStorage immediately to ensure persistence works if they reload right after loading
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             return true;
         } catch (e) {
-            console.error("Error importing save:", e);
+            console.error(UI_TEXT.UI.ERRORS.IMPORT_ERROR, e);
             return false;
         }
     }, []);
