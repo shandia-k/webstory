@@ -52,21 +52,14 @@
   }
 }
 
-/* Base Variables */
+/* Base Theme Variables (Default: Scifi) */
 :root {
-  /* Default (Sci-Fi / Cyberpunk) */
   --color-bg-main: #09090b;
-  /* zinc-950 */
   --color-bg-panel: #18181b;
-  /* zinc-900 */
   --color-text-main: #d4d4d8;
-  /* zinc-300 */
   --color-text-muted: #71717a;
-  /* zinc-500 */
   --color-accent: #4f46e5;
-  /* indigo-600 */
   --color-border: #27272a;
-  /* zinc-800 */
 }
 
 /* Theme Overrides */
@@ -81,31 +74,20 @@
 
 [data-theme='horror'] {
   --color-bg-main: #0a0505;
-  /* Very dark red/black */
   --color-bg-panel: #1a0b0b;
-  /* Dark red panel */
   --color-text-main: #e5e5e5;
   --color-text-muted: #7f1d1d;
-  /* Red-900 text */
   --color-accent: #dc2626;
-  /* Red-600 */
   --color-border: #450a0a;
-  /* Red-950 border */
 }
 
 [data-theme='romance'] {
   --color-bg-main: #1f1016;
-  /* Dark pink/rose bg */
   --color-bg-panel: #2e1a22;
-  /* Rose panel */
   --color-text-main: #fce7f3;
-  /* Pink-100 */
   --color-text-muted: #be185d;
-  /* Pink-700 */
   --color-accent: #db2777;
-  /* Pink-600 */
   --color-border: #831843;
-  /* Pink-900 */
 }
 
 /* Utilities */
@@ -137,4 +119,47 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
+}
+
+/* Explicit Theme Utilities */
+.bg-theme-main {
+  background-color: var(--color-bg-main);
+}
+
+.bg-theme-panel {
+  background-color: var(--color-bg-panel);
+}
+
+.text-theme-text {
+  color: var(--color-text-main);
+}
+
+.text-theme-muted {
+  color: var(--color-text-muted);
+}
+
+.bg-theme-accent {
+  background-color: var(--color-accent);
+}
+
+.text-theme-accent {
+  color: var(--color-accent);
+}
+
+.border-theme-border {
+  border-color: var(--color-border);
+}
+
+.border-theme-accent {
+  border-color: var(--color-accent);
+}
+
+/* Special utility for transparent accent border using color-mix */
+.border-theme-accent-transparent {
+  border-color: color-mix(in srgb, var(--color-accent), transparent 50%);
+}
+
+/* Special utility for transparent accent ring using color-mix */
+.ring-theme-accent-transparent {
+  --tw-ring-color: color-mix(in srgb, var(--color-accent), transparent 50%);
 }

@@ -1,3 +1,5 @@
+import { SCENARIOS } from '../constants/scenarios';
+
 // This service simulates the High-Context LLM defined in the System Prompt.
 // It returns strict JSON objects to control the game state.
 
@@ -7,57 +9,28 @@ export const mockLLM = async (userInput, gameState) => {
 
     const input = userInput.toLowerCase();
 
+    // --- ON-DEMAND CONTEXT AWARENESS ---
+    // Only access history if specific keywords are present to save context window.
+
+
+    if (input.includes('ringkasan') || input.includes('summary') || input.includes('recap')) {
+        // Return stored summary from save file
+        return {
+            narrative: gameState.summary || "(No summary available)",
+            outcome: "NEUTRAL",
+            stat_updates: null,
+            inventory_updates: { add: [], remove: [] },
+            quest_update: null,
+            game_over: false
+        };
+    }
+
     // --- SCENARIO: SYSTEM INITIALIZATION (Start States) ---
     if (userInput.startsWith('SYSTEM_INIT_GENRE:')) {
         const genre = userInput.split(':')[1].trim().toLowerCase();
 
-        if (genre === 'horror') {
-            return {
-                narrative: "Anda terbangun di lantai dingin sebuah rumah sakit tua. Bau antiseptik bercampur dengan bau busuk yang samar. Senter di tangan Anda berkedip lemah, satu-satunya sumber cahaya di kegelapan yang mencekam ini.",
-                outcome: "NEUTRAL",
-                // Horror: Health, Stamina (Energy), Sanity (Shield replacement)
-                stats_set: { health: 60, stamina: 40, sanity: 100 },
-                inventory_set: [ // New operation: SET inventory
-                    { name: "Rusty Flashlight", count: 1, tags: ["tool", "light"], type: "tool", icon: "🔦", value: 100, max_value: 100 },
-                    { name: "Dirty Bandage", count: 2, tags: ["consumable", "heal"], type: "consumable", icon: "🩹" },
-                    { name: "Old Key", count: 1, tags: ["key", "rusty"], type: "key", icon: "🗝️" }
-                ],
-                quest_update: "Cari jalan keluar dari Bangsal 4",
-                game_over: false,
-                theme_config: { main: "#0a0505", accent: "#dc2626" }
-            };
-        } else if (genre === 'romance') {
-            return {
-                narrative: "Angin sore berhembus lembut di taman kota Neo-Kyoto. Anda memegang surat beraroma mawar itu dengan tangan gemetar. Dia berjanji akan datang hari ini, di bawah pohon sakura hologram ini.",
-                outcome: "NEUTRAL",
-                // Romance: Mood (Health), Energy, Charm (Shield replacement)
-                stats_set: { mood: 80, energy: 100, charm: 50 },
-                inventory_set: [
-                    { name: "Golden Locket", count: 1, tags: ["keepsake", "memory"], type: "keepsake", icon: "💖" },
-                    { name: "Perfumed Letter", count: 1, tags: ["intel", "paper"], type: "intel", icon: "💌" },
-                    { name: "Red Rose", count: 1, tags: ["gift", "flower"], type: "gift", icon: "🌹" }
-                ],
-                quest_update: "Tunggu kedatangan 'Dia'",
-                game_over: false,
-                theme_config: { main: "#1f1016", accent: "#db2777" }
-            };
-        } else {
-            // Default SCIFI
-            return {
-                narrative: "Hujan neon membasahi jaket sintetikmu. Drone polisi berpatroli di atas, memindai setiap sudut lorong gelap ini. Misi Anda baru saja dimulai.",
-                outcome: "NEUTRAL",
-                // Sci-Fi: Health, Energy, Shield
-                stats_set: { health: 100, energy: 100, shield: 100 },
-                inventory_set: [
-                    { name: "Plasma Cutter", count: 1, tags: ["tool", "heat", "weapon"], type: "tool", icon: "🔫" },
-                    { name: "Stimpack", count: 3, tags: ["consumable", "heal"], type: "consumable", icon: "💉" },
-                    { name: "Encrypted Datapad", count: 1, tags: ["intel", "encrypted"], type: "intel", icon: "💾" }
-                ],
-                quest_update: "Temui Kontak di Sektor 7",
-                game_over: false,
-                theme_config: { main: "#09090b", accent: "#4f46e5" }
-            };
-        }
+        // Return scenario data if exists, otherwise default to scifi
+        return SCENARIOS[genre] || SCENARIOS['scifi'];
     }
 
     // --- SCENARIO: ITEM DURABILITY (Liquid Stats) ---
