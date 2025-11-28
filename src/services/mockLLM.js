@@ -7,6 +7,23 @@ export const mockLLM = async (userInput, gameState) => {
 
     const input = userInput.toLowerCase();
 
+    // --- ON-DEMAND CONTEXT AWARENESS ---
+    // Only access history if specific keywords are present to save context window.
+
+
+    if (input.includes('ringkasan') || input.includes('summary') || input.includes('recap')) {
+        // Simple summary based on history length (Simulation)
+        const count = gameState.history.length;
+        return {
+            narrative: `(Analisis Log) Kita telah melewati ${count} pertukaran data. Misi "${gameState.quest}" masih aktif. Kondisi fisik tercatat: Health ${gameState.stats.health}%. Fokus pada tujuan utama.`,
+            outcome: "NEUTRAL",
+            stat_updates: null,
+            inventory_updates: { add: [], remove: [] },
+            quest_update: null,
+            game_over: false
+        };
+    }
+
     // --- SCENARIO: SYSTEM INITIALIZATION (Start States) ---
     if (userInput.startsWith('SYSTEM_INIT_GENRE:')) {
         const genre = userInput.split(':')[1].trim().toLowerCase();

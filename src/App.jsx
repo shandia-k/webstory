@@ -10,7 +10,9 @@ import {
     Send,
     User,
     MoreHorizontal,
-    AlertTriangle
+    AlertTriangle,
+    Download,
+    Upload
 } from 'lucide-react';
 
 export default function App() {
@@ -29,12 +31,18 @@ export default function App() {
         lastOutcome, // SUCCESS, FAILURE, or null
         gameOver,
         resetGame,
-        setGenre
+        setGenre,
+        quitGame,
+        exportSave,
+        importSave
     } = useGameEngineV2();
 
-    const [gameStarted, setGameStarted] = useState(false);
+    // Initialize gameStarted based on history (persistence check)
+    const [gameStarted, setGameStarted] = useState(() => history.length > 0);
     const [inputValue, setInputValue] = useState("");
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const scrollRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -54,6 +62,79 @@ export default function App() {
         if (e.key === 'Enter') handleSend();
     };
 
+    // --- SAVE / LOAD HANDLERS ---
+    const handleSaveGame = async () => {
+        const data = exportSave();
+        const jsonString = JSON.stringify(data, null, 2);
+        const fileName = `nexus_save_${new Date().toISOString().slice(0, 10)}.json`;
+
+        try {
+            // Try File System Access API (Modern Browsers)
+            if ('showSaveFilePicker' in window) {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'Nexus RPG Save File',
+                        accept: { 'application/json': ['.json'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(jsonString);
+                await writable.close();
+            } else {
+                // Fallback for browsers that don't support the API
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        } catch (err) {
+            // Ignore abort errors (user cancelled)
+            if (err.name !== 'AbortError') {
+                console.error('Failed to save game:', err);
+                alert('Failed to save game. See console for details.');
+            }
+        } finally {
+            setIsMenuOpen(false);
+        }
+    };
+
+    const handleLoadClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                const success = importSave(data);
+                if (success) {
+                    setGameStarted(true);
+                    setIsMenuOpen(false);
+                } else {
+                    alert("Failed to load save file: Invalid format.");
+                }
+            } catch (err) {
+                console.error("Failed to parse save file", err);
+                alert("Error reading save file.");
+            }
+        };
+        reader.readAsText(file);
+        // Reset input so same file can be selected again if needed
+        e.target.value = null;
+    };
+
     // Determine feedback styles
     let feedbackClass = "";
     if (lastOutcome === 'SUCCESS') feedbackClass = "ring-4 ring-emerald-500/50 bg-emerald-500/20";
@@ -64,6 +145,15 @@ export default function App() {
             data-theme={genre}
             className={`flex h-screen bg-theme-main text-theme-text font-sans selection:bg-theme-accent/30 selection:text-theme-accent transition-all duration-300 ${feedbackClass}`}
         >
+            {/* Hidden File Input for Loading */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".json"
+                className="hidden"
+            />
+
             {!gameStarted ? (
                 <GenreSelection onSelect={(g) => {
                     resetGame(g);
@@ -91,7 +181,7 @@ export default function App() {
                                     <div className="w-full h-px bg-red-500/20" />
 
                                     <button
-                                        onClick={resetGame}
+                                        onClick={() => resetGame(genre)}
                                         className="group relative px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/30 w-full"
                                     >
                                         <span className="relative z-10 flex items-center justify-center gap-2">
@@ -227,9 +317,65 @@ export default function App() {
                                 </div>
                             </div>
 
-                            <button className="text-theme-muted hover:text-theme-text p-2 rounded-lg hover:bg-theme-panel">
-                                <MoreHorizontal size={20} />
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                    className="text-theme-muted hover:text-theme-text p-2 rounded-lg hover:bg-theme-panel transition-colors"
+                                >
+                                    <MoreHorizontal size={20} />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {isMenuOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        />
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-theme-panel border border-theme-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="p-1">
+                                                <button
+                                                    onClick={handleSaveGame}
+                                                    className="w-full text-left px-4 py-2 text-sm text-theme-text hover:bg-theme-main rounded-lg transition-colors flex items-center gap-2"
+                                                >
+                                                    <Download size={14} />
+                                                    Save Game
+                                                </button>
+                                                <button
+                                                    onClick={handleLoadClick}
+                                                    className="w-full text-left px-4 py-2 text-sm text-theme-text hover:bg-theme-main rounded-lg transition-colors flex items-center gap-2"
+                                                >
+                                                    <Upload size={14} />
+                                                    Load Game
+                                                </button>
+                                                <div className="h-px bg-theme-border my-1" />
+                                                <button
+                                                    onClick={() => {
+                                                        resetGame(genre);
+                                                        setIsMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-theme-text hover:bg-theme-main rounded-lg transition-colors flex items-center gap-2"
+                                                >
+                                                    <Zap size={14} />
+                                                    Restart Mission
+                                                </button>
+                                                <div className="h-px bg-theme-border my-1" />
+                                                <button
+                                                    onClick={() => {
+                                                        quitGame();
+                                                        setGameStarted(false);
+                                                        setIsMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+                                                >
+                                                    <X size={14} />
+                                                    Exit Simulation
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </header>
 
                         {/* Narrative Feed Area */}
