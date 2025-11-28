@@ -39,7 +39,9 @@ export function useGameEngineV2() {
 
     // --- ACTION HANDLER ---
     const handleAction = useCallback(async (input) => {
-        if (!input.trim() || isProcessing || gameOver) return;
+        // Allow initialization even if gameOver is true
+        const isInit = input.startsWith('SYSTEM_INIT_GENRE:');
+        if (!input.trim() || isProcessing || (gameOver && !isInit)) return;
 
         // 1. Add User Message
         const userMsg = {

@@ -52,23 +52,6 @@
   }
 }
 
-/* Base Variables */
-:root {
-  /* Default (Sci-Fi / Cyberpunk) */
-  --color-bg-main: #09090b;
-  /* zinc-950 */
-  --color-bg-panel: #18181b;
-  /* zinc-900 */
-  --color-text-main: #d4d4d8;
-  /* zinc-300 */
-  --color-text-muted: #71717a;
-  /* zinc-500 */
-  --color-accent: #4f46e5;
-  /* indigo-600 */
-  --color-border: #27272a;
-  /* zinc-800 */
-}
-
 /* Theme Overrides */
 [data-theme='scifi'] {
   --color-bg-main: #09090b;
