@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { UI_TEXT } from '../constants/strings';
+import { saveGameToFile, parseSaveFile } from '../utils/fileHandler';
 
 export function useGamePersistence(state, STORAGE_KEY) {
     const {
@@ -41,7 +42,7 @@ export function useGamePersistence(state, STORAGE_KEY) {
             history: truncatedHistory,
             summary,
             timestamp: Date.now(),
-            version: '2.0.5'
+            version: UI_TEXT.FIXED.APP_VERSION
         };
     }, [stats, inventory, quest, genre, gameOver, history, summary]);
 
@@ -78,5 +79,34 @@ export function useGamePersistence(state, STORAGE_KEY) {
         }
     }, [setStats, setInventory, setQuest, setGenre, setGameOver, setHistory, setSummary, STORAGE_KEY]);
 
-    return { exportSave, importSave };
+    const saveGame = useCallback(async () => {
+        try {
+            const data = exportSave();
+            await saveGameToFile(data);
+            return true;
+        } catch (err) {
+            console.error('Failed to save game:', err);
+            alert(UI_TEXT.UI.ERRORS.SAVE_FAILED);
+            return false;
+        }
+    }, [exportSave]);
+
+    const loadGame = useCallback(async (file) => {
+        if (!file) return false;
+
+        try {
+            const data = await parseSaveFile(file);
+            const success = importSave(data);
+            if (!success) {
+                alert(UI_TEXT.UI.ERRORS.LOAD_INVALID);
+            }
+            return success;
+        } catch (err) {
+            console.error("Failed to parse save file", err);
+            alert(UI_TEXT.UI.ERRORS.LOAD_ERROR);
+            return false;
+        }
+    }, [importSave]);
+
+    return { exportSave, importSave, saveGame, loadGame };
 }

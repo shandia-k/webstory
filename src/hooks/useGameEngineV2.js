@@ -8,10 +8,10 @@ export function useGameEngineV2() {
     const { STORAGE_KEY } = gameState;
 
     // 2. Initialize Persistence (Side Effects)
-    const { exportSave, importSave } = useGamePersistence(gameState, STORAGE_KEY);
+    const { exportSave, importSave, saveGame, loadGame } = useGamePersistence(gameState, STORAGE_KEY);
 
     // 3. Initialize Logic (Actions)
-    const { handleAction, resetGame, quitGame } = useGameLogic(gameState, STORAGE_KEY);
+    const { handleAction, resetGame, initializeGame, quitGame } = useGameLogic(gameState, STORAGE_KEY);
 
     // 4. Return Unified API
     return {
@@ -24,15 +24,44 @@ export function useGameEngineV2() {
         genre: gameState.genre,
         lastOutcome: gameState.lastOutcome,
         gameOver: gameState.gameOver,
+        choices: gameState.choices,
+
+        // Character Creation State
+        playerName: gameState.playerName,
+        playerRole: gameState.playerRole,
+        setupData: gameState.setupData,
+        setSetupData: gameState.setSetupData,
+        initialCharacterData: gameState.initialCharacterData,
+        setInitialCharacterData: gameState.setInitialCharacterData,
 
         // Actions
         handleAction,
         resetGame,
+        initializeGame,
         setGenre: gameState.setGenre, // Exposed for direct genre switching if needed
         quitGame,
 
         // Persistence
         exportSave,
-        importSave
+        importSave,
+        saveGame,
+        loadGame,
+
+        // Config
+        apiKey: gameState.apiKey,
+        setApiKey: gameState.setApiKey,
+        language: gameState.language,
+        setLanguage: gameState.setLanguage,
+        uiText: gameState.uiText,
+        updateUiText: gameState.updateUiText,
+        isMockMode: gameState.isMockMode,
+        setIsMockMode: gameState.setIsMockMode,
+
+        // Debug Helpers (Exposed for DebugMenu)
+        setStats: gameState.setStats,
+        setInventory: gameState.setInventory,
+        setGameOver: gameState.setGameOver,
+        setChoices: gameState.setChoices,
+        setLastOutcome: gameState.setLastOutcome
     };
 }

@@ -1,11 +1,11 @@
 import React from 'react';
 
-export function StatItem({ icon, label, value, color }) {
+export function StatItem({ icon, label = "Stat", value = 0, color = "bg-gray-500" }) {
     return (
         <div className="group">
             <div className="flex justify-between items-center mb-1.5">
                 <div className="flex items-center gap-2 text-theme-muted group-hover:text-theme-text transition-colors">
-                    <div className={`p-1 rounded-md ${color} bg-opacity-20 text-${color.split('-')[1]}-500`}>
+                    <div className={`p-1 rounded-md ${color} bg-opacity-20 ${color.includes('-') ? `text-${color.split('-')[1]}-500` : 'text-white'}`}>
                         {icon}
                     </div>
                     <span className="text-xs font-medium">{label}</span>

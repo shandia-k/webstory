@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { UI_TEXT } from '../constants/strings';
+import { TRANSLATIONS } from '../constants/textUI';
 
 const STORAGE_KEY = 'nexus_rpg_save_v2';
 
@@ -46,7 +47,91 @@ export function useGameState() {
         }
     ]));
 
+    // Character Creation State
+    const [playerName, setPlayerName] = useState(() => loadState('playerName', ''));
+    const [playerRole, setPlayerRole] = useState(() => loadState('playerRole', null));
+    const [setupData, setSetupData] = useState(() => loadState('setupData', null)); // Cache AI setup response
+    const [initialCharacterData, setInitialCharacterData] = useState(() => loadState('initialCharacterData', null)); // For Restart Mission
+
+    const [choices, setChoices] = useState([]); // Dynamic Action Choices
+
     const [isProcessing, setIsProcessing] = useState(false);
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_api_key') || '');
+    const [language, setLanguage] = useState(() => localStorage.getItem('nexus_language') || 'English');
+    const [isMockMode, setIsMockMode] = useState(() => localStorage.getItem('nexus_mock_mode') === 'true');
+
+    // Custom UI Text from LLM Translation
+    const [customUiText, setCustomUiText] = useState(() => {
+        try {
+            const saved = localStorage.getItem('nexus_ui_custom');
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            return null;
+        }
+    });
+
+    const updateUiText = (lang, data, merge = false) => {
+        setCustomUiText(prev => {
+            let newData = data;
+            if (merge && prev && prev.language === lang) {
+                newData = { ...prev.data, ...data };
+            }
+            const newCustom = { language: lang, data: newData };
+            localStorage.setItem('nexus_ui_custom', JSON.stringify(newCustom));
+            return newCustom;
+        });
+    };
+
+    // Helper for Deep Merge (Hardened & Type-Safe)
+    const deepMerge = (target, source) => {
+        const output = { ...target };
+        if (source && typeof source === 'object' && !Array.isArray(source)) {
+            Object.keys(source).forEach(key => {
+                const sourceValue = source[key];
+                const targetValue = target[key];
+
+                const isSourceObj = sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue);
+                const isTargetObj = targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue);
+
+                if (isTargetObj) {
+                    // Target is object. Only merge if source is also object.
+                    if (isSourceObj) {
+                        output[key] = deepMerge(targetValue, sourceValue);
+                    }
+                    // If source is not object (e.g. string/null), IGNORE it. Keep target structure.
+                } else {
+                    // Target is primitive. Overwrite if source is valid.
+                    if (sourceValue !== undefined && sourceValue !== null) {
+                        Object.assign(output, { [key]: sourceValue });
+                    }
+                }
+            });
+        }
+        return output;
+    };
+
+    const uiText = useMemo(() => {
+        try {
+            // 1. Check if we have custom translation for current language
+            if (customUiText && customUiText.language.toLowerCase() === language.toLowerCase()) {
+                // Deep merge to ensure no keys are lost
+                return {
+                    ...UI_TEXT,
+                    UI: deepMerge(UI_TEXT.UI, customUiText.data)
+                };
+            }
+        } catch (err) {
+            console.error("Error merging UI text, falling back to English:", err);
+            // Fallback will happen below
+        }
+
+        // 2. Fallback to hardcoded translations
+        const langKey = Object.keys(TRANSLATIONS).find(k => k.toLowerCase() === language.toLowerCase()) || 'English';
+        return {
+            ...UI_TEXT, // Keep FIXED and CONTENT
+            UI: TRANSLATIONS[langKey] // Override UI
+        };
+    }, [language, customUiText]);
 
     return {
         stats, setStats,
@@ -57,7 +142,17 @@ export function useGameState() {
         gameOver, setGameOver,
         summary, setSummary,
         history, setHistory,
+        playerName, setPlayerName,
+        playerRole, setPlayerRole,
+        setupData, setSetupData,
+        initialCharacterData, setInitialCharacterData,
+        choices, setChoices,
         isProcessing, setIsProcessing,
-        STORAGE_KEY // Exporting key for persistence hook
+        apiKey, setApiKey,
+        language, setLanguage,
+        isMockMode, setIsMockMode,
+        uiText,
+        updateUiText,
+        STORAGE_KEY
     };
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function InventoryItem({ label, count, tags, icon, value, max_value, onClick }) {
+export function InventoryItem({ label = "Unknown Item", count = 1, tags = [], icon = "📦", value, max_value, onClick }) {
     return (
         <button
             onClick={onClick}

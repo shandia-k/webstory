@@ -1,8 +1,10 @@
 import React from 'react';
 import { Send } from 'lucide-react';
-import { UI_TEXT } from '../../constants/strings';
+import { useGame } from '../../../../context/GameContext';
 
 export function InputArea({ inputValue, setInputValue, handleSend, handleKeyDown }) {
+    const { uiText } = useGame();
+
     return (
         <div className="p-4 lg:p-6 pb-6 lg:pb-10">
             <div className="max-w-3xl mx-auto relative">
@@ -11,7 +13,7 @@ export function InputArea({ inputValue, setInputValue, handleSend, handleKeyDown
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={UI_TEXT.UI.INPUT_PLACEHOLDER}
+                    placeholder={uiText.UI.INPUT_PLACEHOLDER}
                     className="w-full bg-theme-panel text-theme-text placeholder:text-theme-muted pl-5 pr-14 py-4 rounded-xl border border-theme-border focus:border-theme-accent focus:ring-2 focus:ring-theme-accent-transparent focus:outline-none shadow-lg shadow-black/20 transition-all"
                 />
                 <button
@@ -22,7 +24,7 @@ export function InputArea({ inputValue, setInputValue, handleSend, handleKeyDown
                 </button>
             </div>
             <div className="text-center mt-3">
-                <p className="text-[10px] text-theme-muted">{UI_TEXT.UI.INPUT_FOOTER}</p>
+                <p className="text-[10px] text-theme-muted">{uiText.UI.INPUT_FOOTER}</p>
             </div>
         </div>
     );

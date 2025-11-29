@@ -1,10 +1,12 @@
 import React from 'react';
-import { AlertTriangle, Zap } from 'lucide-react';
-import { useGame } from '../../context/GameContext';
-import { UI_TEXT } from '../../constants/strings';
+import { AlertTriangle, Zap, Loader2 } from 'lucide-react';
+import { useGame } from '../../../context/GameContext';
+import { useSmartTranslation } from '../../../hooks/useSmartTranslation';
 
 export function GameOverOverlay() {
-    const { gameOver, resetGame, genre } = useGame();
+    const { gameOver, resetGame, genre, uiText } = useGame();
+    const { isLoading } = useSmartTranslation('GAME_OVER');
+
     if (!gameOver) return null;
 
     return (
@@ -19,8 +21,17 @@ export function GameOverOverlay() {
                     </div>
 
                     <div className="space-y-2">
-                        <h2 className="text-3xl font-bold text-white tracking-widest uppercase">{UI_TEXT.UI.GAME_OVER.TITLE}</h2>
-                        <p className="text-red-400 font-mono text-sm">{UI_TEXT.UI.GAME_OVER.MESSAGE}</p>
+                        {isLoading ? (
+                            <div className="flex flex-col items-center gap-2 animate-pulse text-red-400">
+                                <Loader2 size={24} className="animate-spin" />
+                                <span className="text-xs font-mono tracking-widest">DECIPHERING SIGNAL...</span>
+                            </div>
+                        ) : (
+                            <>
+                                <h2 className="text-3xl font-bold text-white tracking-widest uppercase">{uiText.UI.GAME_OVER.TITLE}</h2>
+                                <p className="text-red-400 font-mono text-sm">{uiText.UI.GAME_OVER.MESSAGE}</p>
+                            </>
+                        )}
                     </div>
 
                     <div className="w-full h-px bg-red-500/20" />
@@ -31,7 +42,7 @@ export function GameOverOverlay() {
                     >
                         <span className="relative z-10 flex items-center justify-center gap-2">
                             <Zap size={18} />
-                            {UI_TEXT.UI.GAME_OVER.BUTTON_REBOOT}
+                            {uiText.UI.GAME_OVER.BUTTON_REBOOT}
                         </span>
                     </button>
                 </div>
