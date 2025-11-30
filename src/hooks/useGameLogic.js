@@ -219,6 +219,11 @@ export function useGameLogic(state, STORAGE_KEY) {
                 setAllowCombo(false);
             }
 
+            // Trigger QTE (Quick Time Event)
+            if (response.qte_active) {
+                setQteActive(true);
+            }
+
         } catch (error) {
             console.error("LLM Error:", error);
             setIsProcessing(false);

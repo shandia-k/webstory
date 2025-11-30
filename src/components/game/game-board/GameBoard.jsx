@@ -8,6 +8,7 @@ import { BackgroundLayer } from './BackgroundLayer';
 import { ParticleLayer } from './ParticleLayer';
 import { GameOverOverlay } from './GameOverOverlay';
 import { HoloDeck } from './holo-deck/HoloDeck';
+import { QTEOverlay } from './QTEOverlay';
 
 export function GameBoard({ setGameStarted }) {
     const {
