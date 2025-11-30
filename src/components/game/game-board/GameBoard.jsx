@@ -2,12 +2,12 @@ import React, { useState, useRef } from 'react';
 import { useGame } from '../../../context/GameContext';
 import { Sidebar } from './sidebar/Sidebar';
 import { Header } from './header/Header';
+import { GameMenu } from './header/GameMenu';
 import { NarrativeFeed } from './narrative-feed/NarrativeFeed';
 import { InputArea } from './input-area/InputArea';
 import { BackgroundLayer } from './BackgroundLayer';
 import { ParticleLayer } from './ParticleLayer';
 import { GameOverOverlay } from './GameOverOverlay';
-import { HoloDeck } from './holo-deck/HoloDeck';
 
 export function GameBoard({ setGameStarted }) {
     const {
@@ -89,9 +89,6 @@ export function GameBoard({ setGameStarted }) {
         overlayClass = "bg-[radial-gradient(circle_at_center,transparent_20%,rgba(220,38,38,0.6)_100%)] mix-blend-hard-light";
     }
 
-    // Check if HoloDeck should be visible (has choices)
-    const showHoloDeck = choices && choices.length > 0 && !gameOver;
-
     return (
         <div className={`flex h-screen bg-transparent relative transition-all duration-300 ${wrapperClass}`}>
             <BackgroundLayer />
@@ -146,6 +143,18 @@ export function GameBoard({ setGameStarted }) {
                 />
             )}
 
+            <GameMenu
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                onSave={handleSaveGame}
+                onLoad={handleLoadClick}
+                onRestart={() => resetGame(genre)}
+                onExit={() => {
+                    quitGame();
+                    setGameStarted(false);
+                }}
+            />
+
             {/* --- MOBILE OVERLAY --- */}
             {isSidebarOpen && (
                 <div
@@ -174,9 +183,6 @@ export function GameBoard({ setGameStarted }) {
                     setIsSidebarOpen={setIsSidebarOpen}
                     isMenuOpen={isMenuOpen}
                     setIsMenuOpen={setIsMenuOpen}
-                    handleSaveGame={handleSaveGame}
-                    handleLoadClick={handleLoadClick}
-                    setGameStarted={setGameStarted}
                 />
 
                 {/* Content Area */}
@@ -188,31 +194,17 @@ export function GameBoard({ setGameStarted }) {
                     >
                         <NarrativeFeed handleSend={handleSend} />
                     </div>
-
-                    {/* HOLODECK OVERLAY (Bottom) */}
-                    {showHoloDeck && (
-                        <div
-                            className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
-                            onMouseEnter={() => setIsFocusingText(false)}
-                        >
-                            <HoloDeck
-                                choices={choices}
-                                inventory={inventory}
-                                handleAction={handleAction}
-                                allowCombo={allowCombo}
-                                isFocusingText={isFocusingText}
-                            />
-                        </div>
-                    )}
                 </div>
 
+                {/* UNIFIED INPUT AREA (Replaces HoloDeck & Old InputArea) */}
                 <InputArea
                     inputValue={inputValue}
                     setInputValue={setInputValue}
                     handleSend={handleSend}
-                    handleKeyDown={handleKeyDown}
+                    choices={choices}
+                    inventory={inventory}
+                    handleAction={handleAction}
                     disabled={gameOver}
-                    isShrunk={showHoloDeck}
                 />
 
             </main>

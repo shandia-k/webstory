@@ -1,45 +1,113 @@
-import React from 'react';
-import { Send } from 'lucide-react';
-import { useGame } from '../../../../context/GameContext';
+import React, { useMemo, useState } from 'react';
+import { TextArea } from './TextArea';
+import { ActionCard } from './ActionCard';
+import { Box, Heart, Zap, Shield } from 'lucide-react';
 
-export function InputArea({ inputValue, setInputValue, handleSend, handleKeyDown, disabled, isShrunk }) {
-    const { uiText } = useGame();
+export function InputArea({
+    inputValue,
+    setInputValue,
+    handleSend,
+    choices = [],
+    inventory = [],
+    handleAction,
+    disabled
+}) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Helper to get icon for item
+    const getItemIcon = (itemName) => {
+        const lower = itemName.toLowerCase();
+        if (lower.includes('medkit') || lower.includes('heal')) return <Heart size={14} className="text-emerald-400" />;
+        if (lower.includes('grenade') || lower.includes('bomb')) return <Box size={14} className="text-red-400" />;
+        if (lower.includes('shield') || lower.includes('armor')) return <Shield size={14} className="text-blue-400" />;
+        if (lower.includes('energy') || lower.includes('battery')) return <Zap size={14} className="text-yellow-400" />;
+        return <Box size={14} className="text-slate-400" />;
+    };
+
+    const cards = useMemo(() => {
+        return choices.map((c, i) => {
+            // Heuristic: Check if choice label/action mentions an inventory item
+            const matchingItem = inventory.find(item =>
+                c.label.toLowerCase().includes(item.name.toLowerCase()) ||
+                (c.action && c.action.toLowerCase().includes(item.name.toLowerCase()))
+            );
+
+            return {
+                ...c,
+                id: c.id || `choice-${i}`,
+                type: c.type || 'action',
+                itemCost: matchingItem ? {
+                    name: matchingItem.name,
+                    icon: getItemIcon(matchingItem.name)
+                } : null
+            };
+        });
+    }, [choices, inventory]);
 
     return (
-        <div className={`relative z-50 transition-all duration-500 ease-in-out ${isShrunk ? 'p-2 pb-2 opacity-90 hover:opacity-100' : 'p-4 lg:p-6 pb-6 lg:pb-10'}`}>
-            <div className={`max-w-3xl mx-auto relative transition-all duration-500`}>
-                <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={disabled}
-                    placeholder={disabled ? "CONNECTION TERMINATED" : (isShrunk ? "Type command..." : uiText.UI.INPUT_PLACEHOLDER)}
-                    className={`
-                        w-full bg-theme-panel text-theme-text placeholder:text-theme-muted 
-                        rounded-xl border border-theme-border focus:border-theme-accent focus:ring-2 focus:ring-theme-accent-transparent focus:outline-none 
-                        shadow-lg shadow-black/20 transition-all 
-                        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                        ${isShrunk ? 'py-2 pl-4 pr-10 text-sm' : 'py-4 pl-5 pr-14'}
-                    `}
-                />
-                <button
-                    onClick={() => handleSend()}
-                    disabled={disabled}
-                    className={`
-                        absolute right-2 top-1/2 -translate-y-1/2 bg-theme-accent hover:opacity-90 text-white rounded-lg transition-colors 
-                        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                        ${isShrunk ? 'p-1' : 'p-2'}
-                    `}
-                >
-                    <Send size={isShrunk ? 14 : 18} />
-                </button>
-            </div>
-            {!isShrunk && (
-                <div className="text-center mt-3">
-                    <p className="text-[10px] text-theme-muted">{uiText.UI.INPUT_FOOTER}</p>
+        <div className="w-full bg-slate-900/80 backdrop-blur-md border-t border-slate-700 z-30 transition-all duration-300">
+            {/* Background Grid (Optional, from snippet) */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20" />
+
+            {/* Container: Flexbox Deck */}
+            <div className={`
+                max-w-7xl mx-auto flex items-center justify-center
+                transition-all duration-500 ease-in-out
+                ${isExpanded ? 'gap-0' : 'gap-2 md:gap-4'}
+                h-48 md:h-72 /* Reduced height for better feed visibility */
+                p-4
+            `}>
+
+                {/* 1. Input / Text Area (The "Manual" Card) */}
+                <div className={`
+                    relative h-full rounded-xl md:rounded-2xl overflow-hidden min-w-0
+                    flex flex-col transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]
+                    ${isExpanded
+                        ? 'flex-[100] w-full cursor-default'
+                        : 'flex-1 max-w-[120px] md:max-w-[180px] cursor-pointer hover:-translate-y-2 hover:shadow-xl'
+                    }
+                `}>
+                    <TextArea
+                        inputValue={inputValue}
+                        setInputValue={setInputValue}
+                        handleSend={handleSend}
+                        disabled={disabled}
+                        isExpanded={isExpanded}
+                        setIsExpanded={setIsExpanded}
+                        className="w-full h-full"
+                    />
                 </div>
-            )}
+
+                {/* 2. Action Cards */}
+                {cards.map((card, index) => (
+                    <div
+                        key={card.id}
+                        className={`
+                            relative h-full rounded-xl md:rounded-2xl overflow-hidden min-w-0
+                            flex flex-col transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]
+                            ${isExpanded
+                                ? 'flex-[0] w-0 opacity-0 pointer-events-none p-0 m-0 border-0'
+                                : 'flex-1 max-w-[120px] md:max-w-[180px] cursor-pointer hover:-translate-y-2 hover:shadow-xl'
+                            }
+                        `}
+                    >
+                        <ActionCard
+                            card={card}
+                            onClick={() => handleAction(card.action)}
+                            disabled={disabled}
+                            className="w-full h-full"
+                        />
+                    </div>
+                ))}
+
+                {/* Empty State / Spacer */}
+                {!isExpanded && cards.length === 0 && (
+                    <div className="flex-1 flex items-center justify-center h-full text-slate-500 text-xs italic border-2 border-dashed border-slate-800 rounded-xl">
+                        No Actions
+                    </div>
+                )}
+            </div>
+
         </div>
     );
 }
