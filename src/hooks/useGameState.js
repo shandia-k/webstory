@@ -28,6 +28,7 @@ export function useGameState() {
 
     const [quest, setQuest] = useState(() => loadState('quest', UI_TEXT.CONTENT.QUEST_DEFAULT));
     const [genre, setGenre] = useState(() => loadState('genre', UI_TEXT.FIXED.GENRE_DEFAULT));
+    const [environment, setEnvironment] = useState(() => loadState('environment', null)); // Dynamic Background
     const [lastOutcome, setLastOutcome] = useState(null);
     const [gameOver, setGameOver] = useState(() => loadState('gameOver', false));
     const [summary, setSummary] = useState(() => loadState('summary', UI_TEXT.CONTENT.SUMMARY_INIT));
@@ -59,6 +60,11 @@ export function useGameState() {
     const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_api_key') || '');
     const [language, setLanguage] = useState(() => localStorage.getItem('nexus_language') || 'English');
     const [isMockMode, setIsMockMode] = useState(() => localStorage.getItem('nexus_mock_mode') === 'true');
+
+    // Advanced Interactions State
+    const [qteActive, setQteActive] = useState(false);
+    const [feedback, setFeedback] = useState(null); // { msg: string, color: string }
+    const [allowCombo, setAllowCombo] = useState(false); // Enable Combo Mode
 
     // Custom UI Text from LLM Translation
     const [customUiText, setCustomUiText] = useState(() => {
@@ -138,6 +144,7 @@ export function useGameState() {
         inventory, setInventory,
         quest, setQuest,
         genre, setGenre,
+        environment, setEnvironment,
         lastOutcome, setLastOutcome,
         gameOver, setGameOver,
         summary, setSummary,
@@ -151,6 +158,9 @@ export function useGameState() {
         apiKey, setApiKey,
         language, setLanguage,
         isMockMode, setIsMockMode,
+        qteActive, setQteActive,
+        feedback, setFeedback,
+        allowCombo, setAllowCombo,
         uiText,
         updateUiText,
         STORAGE_KEY

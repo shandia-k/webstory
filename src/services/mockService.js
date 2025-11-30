@@ -7,8 +7,94 @@
 export const getMockResponse = (userInput, gameState) => {
     const lowerInput = userInput.toLowerCase();
 
+    // --- MOCK COMMANDS ---
+    if (lowerInput.startsWith('mock:')) {
+        const command = lowerInput.split(':')[1]?.trim();
+
+        if (command === 'success') {
+            return {
+                narrative: "[MOCK] Critical Success! The system responds perfectly to your input.",
+                outcome: "SUCCESS",
+                stat_updates: { energy: -5, experience: 10 },
+                inventory_updates: { add: [], remove: [] },
+                quest_update: null,
+                game_over: false,
+                choices: [
+                    { label: "Continue", action: "continue", type: "action" }
+                ]
+            };
+        }
+
+        if (command === 'fail') {
+            return {
+                narrative: "[MOCK] Critical Failure! Sparks fly and you take damage.",
+                outcome: "FAILURE",
+                stat_updates: { health: -15, energy: -5 },
+                inventory_updates: { add: [], remove: [] },
+                quest_update: null,
+                game_over: false,
+                choices: [
+                    { label: "Recover", action: "recover", type: "action" }
+                ]
+            };
+        }
+
+        if (command === 'loot') {
+            return {
+                narrative: "[MOCK] You found a hidden cache of supplies.",
+                outcome: "SUCCESS",
+                stat_updates: {},
+                inventory_updates: {
+                    add: [
+                        { name: "Mock Item " + Math.floor(Math.random() * 100), count: 1, type: "resource", icon: "📦" },
+                        { name: "Rare Chip", count: 1, type: "intel", icon: "💾" }
+                    ],
+                    remove: []
+                },
+                quest_update: null,
+                game_over: false,
+                choices: [
+                    { label: "Take All", action: "take all", type: "action" }
+                ]
+            };
+        }
+
+        if (command === 'cards') {
+            return {
+                narrative: "[MOCK] Testing Action Cards display. All types generated.",
+                outcome: "NEUTRAL",
+                stat_updates: {},
+                inventory_updates: { add: [], remove: [] },
+                quest_update: null,
+                game_over: false,
+                choices: [
+                    { label: "Standard Action", action: "test action", type: "action" },
+                    { label: "Skill Check (High)", action: "test skill", type: "skill_check", meta: { probability: "85%", stat: "tech" } },
+                    { label: "Dice Roll", action: "test dice", type: "dice", meta: { probability: "Roll > 15" } },
+                    { label: "Resource Cost", action: "test cost", type: "resource", meta: { cost: "2 Energy" } }
+                ]
+            };
+        }
+
+        if (command === 'delay') {
+            // This is handled in the UI by the delay itself, but we return a standard response
+            return {
+                narrative: "[MOCK] Response received after simulated delay.",
+                outcome: "NEUTRAL",
+                stat_updates: {},
+                inventory_updates: { add: [], remove: [] },
+                quest_update: null,
+                game_over: false,
+                choices: [
+                    { label: "Continue", action: "continue", type: "action" }
+                ]
+            };
+        }
+    }
+
+    // --- STANDARD MOCK LOGIC ---
     let mockResponse = {
-        narrative: `[MOCK] You perform: "${userInput}".`,
+        narrative: `[MOCK] You perform: "${userInput}". The simulation reacts accordingly.`,
         outcome: "NEUTRAL",
         stat_updates: { energy: -1 },
         inventory_updates: { add: [], remove: [] },

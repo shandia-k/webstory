@@ -11,7 +11,7 @@ export function useGameEngineV2() {
     const { exportSave, importSave, saveGame, loadGame } = useGamePersistence(gameState, STORAGE_KEY);
 
     // 3. Initialize Logic (Actions)
-    const { handleAction, resetGame, initializeGame, quitGame } = useGameLogic(gameState, STORAGE_KEY);
+    const { handleAction, resetGame, initializeGame, quitGame, suspenseOutcome, triggerFeedback } = useGameLogic(gameState, STORAGE_KEY);
 
     // 4. Return Unified API
     return {
@@ -21,7 +21,9 @@ export function useGameEngineV2() {
         quest: gameState.quest,
         history: gameState.history,
         isProcessing: gameState.isProcessing,
+        suspenseOutcome, // Exposed Suspense State
         genre: gameState.genre,
+        environment: gameState.environment, // Exposed Dynamic Environment
         lastOutcome: gameState.lastOutcome,
         gameOver: gameState.gameOver,
         choices: gameState.choices,
@@ -62,6 +64,13 @@ export function useGameEngineV2() {
         setInventory: gameState.setInventory,
         setGameOver: gameState.setGameOver,
         setChoices: gameState.setChoices,
-        setLastOutcome: gameState.setLastOutcome
+        setLastOutcome: gameState.setLastOutcome,
+
+        // Advanced Interactions
+        qteActive: gameState.qteActive,
+        setQteActive: gameState.setQteActive,
+        feedback: gameState.feedback,
+        triggerFeedback,
+        allowCombo: gameState.allowCombo
     };
 }

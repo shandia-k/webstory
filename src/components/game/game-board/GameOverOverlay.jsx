@@ -3,11 +3,13 @@ import { AlertTriangle, Zap, Loader2 } from 'lucide-react';
 import { useGame } from '../../../context/GameContext';
 import { useSmartTranslation } from '../../../hooks/useSmartTranslation';
 
-export function GameOverOverlay() {
+import { Eye } from 'lucide-react'; // Import Eye icon
+
+export function GameOverOverlay({ isVisible, onHide }) {
     const { gameOver, resetGame, genre, uiText } = useGame();
     const { isLoading } = useSmartTranslation('GAME_OVER');
 
-    if (!gameOver) return null;
+    if (!gameOver || !isVisible) return null;
 
     return (
         <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-1000">
@@ -36,15 +38,27 @@ export function GameOverOverlay() {
 
                     <div className="w-full h-px bg-red-500/20" />
 
-                    <button
-                        onClick={() => resetGame(genre)}
-                        className="group relative px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/30 w-full"
-                    >
-                        <span className="relative z-10 flex items-center justify-center gap-2">
-                            <Zap size={18} />
-                            {uiText.UI.GAME_OVER.BUTTON_REBOOT}
-                        </span>
-                    </button>
+                    <div className="w-full space-y-3">
+                        <button
+                            onClick={() => resetGame(genre)}
+                            className="group relative px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/30 w-full"
+                        >
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                <Zap size={18} />
+                                {uiText.UI.GAME_OVER.BUTTON_REBOOT}
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={onHide}
+                            className="group relative px-8 py-3 bg-transparent border border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 font-bold rounded-lg transition-all w-full"
+                        >
+                            <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                                <Eye size={16} />
+                                VIEW AFTERMATH
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

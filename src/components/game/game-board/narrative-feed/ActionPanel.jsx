@@ -3,9 +3,9 @@ import { useGame } from '../../../../context/GameContext';
 import { Zap, Shield, Activity, Dices, Cpu, Crosshair } from 'lucide-react';
 
 export function ActionPanel() {
-    const { choices, handleAction, isProcessing } = useGame();
+    const { choices, handleAction, isProcessing, gameOver } = useGame();
 
-    if (!choices || choices.length === 0 || isProcessing) return null;
+    if (!choices || choices.length === 0 || isProcessing || gameOver) return null;
 
     return (
         <div className="w-full mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">

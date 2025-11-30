@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { generateGameResponse } from '../services/llmService';
 import { UI_TEXT } from '../constants/strings';
+import { SLASH_COMMANDS } from '../constants/slashCommands';
 
 export function useGameLogic(state, STORAGE_KEY) {
     const {
@@ -8,6 +9,7 @@ export function useGameLogic(state, STORAGE_KEY) {
         inventory, setInventory,
         quest, setQuest,
         genre, setGenre,
+        environment, setEnvironment,
         gameOver, setGameOver,
         history, setHistory,
         summary, setSummary,
@@ -15,8 +17,15 @@ export function useGameLogic(state, STORAGE_KEY) {
         setLastOutcome,
         apiKey, // Get API Key from state
         language, // Get Language from state
-        setChoices // Set Choices state
+        setChoices, // Set Choices state
+        isMockMode, // Get Mock Mode from state
+        qteActive, setQteActive,
+        feedback, setFeedback,
+        allowCombo, setAllowCombo
     } = state;
+
+    // --- SUSPENSE STATE ---
+    const [suspenseOutcome, setSuspenseOutcome] = useState(null);
 
     // --- HELPER: UPDATE STATS ---
     const updateStats = useCallback((updates) => {
@@ -75,7 +84,7 @@ export function useGameLogic(state, STORAGE_KEY) {
     const handleAction = useCallback(async (input) => {
         // Allow initialization even if gameOver is true
         const isInit = input.startsWith('SYSTEM_INIT_GENRE:');
-        if (!input.trim() || isProcessing || (gameOver && !isInit)) return;
+        if (!input.trim() || isProcessing || suspenseOutcome || (gameOver && !isInit)) return;
 
         // 1. Add User Message
         const userMsg = {
@@ -86,22 +95,50 @@ export function useGameLogic(state, STORAGE_KEY) {
                 : input,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setHistory(prev => [...prev, userMsg]);
+
+        // Only add to history if NOT an initialization command
+        if (!isInit) {
+            setHistory(prev => [...prev, userMsg]);
+        }
         setChoices([]); // Clear choices immediately
         setIsProcessing(true);
 
         try {
             // 2. Call Real LLM (or Fallback if Init)
-            const gameState = { stats, inventory, quest, history, summary, genre, language };
+            const gameState = { stats, inventory, quest, history, summary, genre, language, isMockMode };
 
-            // Check for API Key if not init
-            if (!isInit && !apiKey) {
+            // Check for API Key if not init AND not in Mock Mode
+            if (!isInit && !apiKey && !isMockMode) {
                 throw new Error("API_KEY_MISSING");
             }
 
-            const response = await generateGameResponse(apiKey, input, gameState);
+            // Handle Mock Delay
+            if (isMockMode && input.toLowerCase().includes('mock:delay')) {
+                await new Promise(r => setTimeout(r, 3000));
+            }
+
+            // --- SLASH COMMAND OVERRIDE ---
+            let finalPrompt = input;
+            const lowerInput = input.trim().toLowerCase();
+            if (SLASH_COMMANDS[lowerInput]) {
+                console.log(`Executing Slash Command: ${lowerInput}`);
+                finalPrompt = SLASH_COMMANDS[lowerInput];
+            }
+
+            const response = await generateGameResponse(apiKey, finalPrompt, gameState);
+            console.log("LLM Raw Response:", response); // DEBUG LOG
 
             // 3. Process JSON Response
+
+            // --- SUSPENSE PHASE ---
+            setIsProcessing(false); // Stop "Rolling..."
+            const outcome = response.outcome || 'NEUTRAL';
+            setSuspenseOutcome(outcome); // Show Result (Success/Fail/Neutral)
+
+            // Wait for suspense animation (1.5s)
+            await new Promise(r => setTimeout(r, 1500));
+
+            setSuspenseOutcome(null); // Hide Loader
 
             // Handle Outcome (Visual Feedback)
             if (response.outcome && response.outcome !== 'NEUTRAL') {
@@ -143,6 +180,15 @@ export function useGameLogic(state, STORAGE_KEY) {
                 });
             }
 
+            // Update Environment (Dynamic Atmosphere)
+            if (response.environment_tags && response.environment_tags.length > 0) {
+                console.log("Environment Tags Detected:", response.environment_tags); // DEBUG LOG
+                // Take the first valid tag as the primary environment
+                setEnvironment(response.environment_tags[0]);
+            } else {
+                console.log("No Environment Tags in Response"); // DEBUG LOG
+            }
+
             // Check Explicit Game Over
             if (response.game_over) {
                 setGameOver(true);
@@ -153,6 +199,7 @@ export function useGameLogic(state, STORAGE_KEY) {
                 id: Date.now() + 1,
                 role: 'ai',
                 content: response.narrative,
+                visual_effect: response.visual_effect || null, // Capture Dynamic CSS
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             setHistory(prev => [...prev, aiMsg]);
@@ -164,10 +211,20 @@ export function useGameLogic(state, STORAGE_KEY) {
                 setChoices([]); // Clear if no choices provided
             }
 
+            // Update Combo State
+            if (response.allow_combo) {
+                setAllowCombo(true);
+                triggerFeedback("COMBO UNLOCKED!", "text-cyan-400");
+            } else {
+                setAllowCombo(false);
+            }
+
         } catch (error) {
             console.error("LLM Error:", error);
+            setIsProcessing(false);
+            setSuspenseOutcome(null);
 
-            let errorMessage = 'Error: Connection to Neural Link lost.';
+            let errorMessage = `Error: Connection to Neural Link lost. (${error.message})`;
             if (error.message === 'API_KEY_MISSING') {
                 errorMessage = 'SYSTEM ERROR: API Key Missing. Please configure it in Settings.';
             }
@@ -178,10 +235,8 @@ export function useGameLogic(state, STORAGE_KEY) {
                 content: errorMessage,
                 timestamp: new Date().toLocaleTimeString()
             }]);
-        } finally {
-            setIsProcessing(false);
         }
-    }, [stats, inventory, quest, isProcessing, gameOver, history, summary, setHistory, setIsProcessing, setLastOutcome, setStats, setInventory, setQuest, setGameOver, apiKey, genre, updateStats, updateInventory]);
+    }, [stats, inventory, quest, isProcessing, suspenseOutcome, gameOver, history, summary, setHistory, setIsProcessing, setLastOutcome, setStats, setInventory, setQuest, setGameOver, apiKey, genre, updateStats, updateInventory, isMockMode, language]);
 
     // --- INITIALIZE GAME (After Character Creation) ---
     const initializeGame = useCallback((characterData) => {
@@ -253,5 +308,11 @@ export function useGameLogic(state, STORAGE_KEY) {
         setSummary(UI_TEXT.CONTENT.SUMMARY_INIT);
     }, [STORAGE_KEY, setStats, setInventory, setQuest, setGenre, setHistory, setGameOver, setSummary]);
 
-    return { handleAction, resetGame, initializeGame, quitGame };
+    // --- HELPER: TRIGGER FEEDBACK ---
+    const triggerFeedback = useCallback((msg, color = "text-blue-400") => {
+        setFeedback({ msg, color });
+        setTimeout(() => setFeedback(null), 2000);
+    }, [setFeedback]);
+
+    return { handleAction, resetGame, initializeGame, quitGame, suspenseOutcome, qteActive, setQteActive, feedback, triggerFeedback };
 }

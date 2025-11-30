@@ -12,16 +12,14 @@
   /* Animations */
   --animate-typing: typing 1s infinite ease-in-out;
   --animate-shake: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+  --animate-spin-slow: spin 3s linear infinite;
 
   /* Keyframes */
   @keyframes typing {
-
-    0%,
-    100% {
+    0%, 100% {
       transform: translateY(0);
       opacity: 0.5;
     }
-
     50% {
       transform: translateY(-4px);
       opacity: 1;
@@ -29,25 +27,14 @@
   }
 
   @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
 
-    0%,
-    100% {
-      transform: translateX(0);
-    }
-
-    10%,
-    30%,
-    50%,
-    70%,
-    90% {
-      transform: translateX(-4px);
-    }
-
-    20%,
-    40%,
-    60%,
-    80% {
-      transform: translateX(4px);
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 }
@@ -163,3 +150,89 @@
 .ring-theme-accent-transparent {
   --tw-ring-color: color-mix(in srgb, var(--color-accent), transparent 50%);
 }
+
+/* --- 3D DICE STYLES --- */
+:root {
+  --dice-size: 120px;
+  --dice-offset: 60px; /* Half of size */
+}
+
+@media (min-width: 768px) {
+  :root {
+    --dice-size: 160px;
+    --dice-offset: 80px;
+  }
+}
+
+.scene {
+  width: var(--dice-size);
+  height: var(--dice-size);
+  perspective: 800px;
+  position: relative;
+}
+
+.cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dice-face {
+  position: absolute;
+  width: var(--dice-size);
+  height: var(--dice-size);
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 10%;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* THEME: SCIFI (Default) */
+.dice-theme-scifi .dice-face {
+  background: rgba(10, 10, 20, 0.9);
+  border: 2px solid #4f46e5; /* Indigo-600 */
+  box-shadow: 0 0 15px rgba(79, 70, 229, 0.5), inset 0 0 20px rgba(79, 70, 229, 0.2);
+}
+.dice-theme-scifi .pip {
+  background: #00f0ff; /* Cyan */
+  box-shadow: 0 0 8px #00f0ff;
+  border-radius: 50%;
+}
+
+/* THEME: HORROR */
+.dice-theme-horror .dice-face {
+  background: #e3d5b8; /* Bone */
+  border: 1px solid #5c4033;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+}
+.dice-theme-horror .pip {
+  background: #7f1d1d; /* Blood Red */
+  box-shadow: 0 0 5px rgba(220,38,38,0.8);
+  border-radius: 50%;
+}
+
+/* THEME: FANTASY (Romance/Default fallback) */
+.dice-theme-fantasy .dice-face {
+  background: #271c19; /* Dark Wood */
+  border: 2px solid #d4af37; /* Gold */
+}
+.dice-theme-fantasy .pip {
+  background: #d4af37; /* Gold */
+  box-shadow: 0 0 4px #d4af37;
+  transform: rotate(45deg); /* Diamond pips */
+  border-radius: 2px;
+}
+
+/* FACE TRANSFORMS */
+.face-front  { transform: rotateY(0deg) translateZ(var(--dice-offset)); }
+.face-back   { transform: rotateY(180deg) translateZ(var(--dice-offset)); }
+.face-right  { transform: rotateY(90deg) translateZ(var(--dice-offset)); }
+.face-left   { transform: rotateY(-90deg) translateZ(var(--dice-offset)); }
+.face-top    { transform: rotateX(90deg) translateZ(var(--dice-offset)); }
+.face-bottom { transform: rotateX(-90deg) translateZ(var(--dice-offset)); }

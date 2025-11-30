@@ -9,7 +9,9 @@ export function DebugMenu() {
         inventory, setInventory,
         setGameOver,
         setLastOutcome,
-        isMockMode, setIsMockMode
+        isMockMode, setIsMockMode,
+        handleAction, // Added handleAction
+        setQteActive // Added setQteActive
     } = useGame();
 
     const toggleMockMode = () => {
@@ -46,6 +48,11 @@ export function DebugMenu() {
         setInventory([]);
     };
 
+    const killCharacter = () => {
+        setStats(prev => ({ ...prev, health: 0 }));
+        setGameOver(true);
+    };
+
     return (
         <div className="fixed bottom-4 right-4 z-[9999] pb-[env(safe-area-inset-bottom)]">
             {/* Toggle Button */}
@@ -77,6 +84,47 @@ export function DebugMenu() {
 
                     {/* Actions */}
                     <div className="grid grid-cols-2 gap-2">
+                        {/* Mock Commands (Only visible in Mock Mode) */}
+                        {isMockMode && (
+                            <>
+                                <button
+                                    onClick={() => handleAction('mock:success')}
+                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-green-900/30 hover:bg-green-900/50 text-green-400 rounded-lg border border-green-900/50 transition-colors"
+                                >
+                                    <Check size={16} />
+                                    <span className="text-[10px]">Mock Success</span>
+                                </button>
+                                <button
+                                    onClick={() => handleAction('mock:fail')}
+                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 rounded-lg border border-rose-900/50 transition-colors"
+                                >
+                                    <XCircle size={16} />
+                                    <span className="text-[10px]">Mock Fail</span>
+                                </button>
+                                <button
+                                    onClick={() => handleAction('mock:cards')}
+                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-purple-900/30 hover:bg-purple-900/50 text-purple-400 rounded-lg border border-purple-900/50 transition-colors"
+                                >
+                                    <Zap size={16} />
+                                    <span className="text-[10px]">Test Cards</span>
+                                </button>
+                                <button
+                                    onClick={() => handleAction('mock:loot')}
+                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-amber-900/30 hover:bg-amber-900/50 text-amber-400 rounded-lg border border-amber-900/50 transition-colors"
+                                >
+                                    <Plus size={16} />
+                                    <span className="text-[10px]">Mock Loot</span>
+                                </button>
+                                <button
+                                    onClick={() => setQteActive(true)}
+                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-400 rounded-lg border border-yellow-900/50 transition-colors"
+                                >
+                                    <Zap size={16} />
+                                    <span className="text-[10px]">Trigger QTE</span>
+                                </button>
+                            </>
+                        )}
+
                         <button
                             onClick={healCharacter}
                             className="flex flex-col items-center justify-center gap-1 p-2 bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-400 rounded-lg border border-emerald-900/50 transition-colors"
@@ -106,24 +154,11 @@ export function DebugMenu() {
                             <span className="text-[10px]">Clear Inv</span>
                         </button>
                         <button
-                            onClick={() => {
-                                setLastOutcome('SUCCESS');
-                                setTimeout(() => setLastOutcome(null), 1000);
-                            }}
-                            className="flex flex-col items-center justify-center gap-1 p-2 bg-green-900/30 hover:bg-green-900/50 text-green-400 rounded-lg border border-green-900/50 transition-colors"
+                            onClick={killCharacter}
+                            className="flex flex-col items-center justify-center gap-1 p-2 bg-red-950/50 hover:bg-red-900/80 text-red-500 rounded-lg border border-red-900/50 transition-colors col-span-2"
                         >
-                            <Check size={16} />
-                            <span className="text-[10px]">Success</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setLastOutcome('FAILURE');
-                                setTimeout(() => setLastOutcome(null), 1000);
-                            }}
-                            className="flex flex-col items-center justify-center gap-1 p-2 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 rounded-lg border border-rose-900/50 transition-colors"
-                        >
-                            <XCircle size={16} />
-                            <span className="text-[10px]">Failure</span>
+                            <Skull size={16} />
+                            <span className="text-[10px]">KILL PLAYER (TEST GAME OVER)</span>
                         </button>
                     </div>
                 </div>
