@@ -6,7 +6,7 @@ import { NameSection } from './NameSection';
 import { RoleSelector } from './RoleSelector';
 import { RoleDetails } from './RoleDetails';
 
-export function CharacterCreation({ genre, onComplete, onBack }) {
+export function CharacterCreation({ genre, onComplete, onBack, isTestMode }) {
     const { apiKey, language, setupData, setSetupData, uiText } = useGame();
 
     const [loading, setLoading] = useState(!setupData);
@@ -134,6 +134,7 @@ export function CharacterCreation({ genre, onComplete, onBack }) {
                         includeItems={includeItems}
                         name={name}
                         handleConfirm={handleConfirm}
+                        confirmButtonText={isTestMode ? "INITIATE TEST" : uiText.UI.CHARACTER_CREATION.BTN_INITIATE}
                     />
 
                 </div>

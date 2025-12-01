@@ -37,5 +37,18 @@ export const SCENARIOS = {
         quest_update: "Meet Contact in Sector 7",
         game_over: false,
         theme_config: { main: "#09090b", accent: "#4f46e5" }
+    },
+    rpg: {
+        narrative: "You stand before the ancient gates of the Forgotten Citadel. The air hums with magical energy, and the distant roar of a dragon echoes through the valley. Your sword feels heavy in your hand.",
+        outcome: "NEUTRAL",
+        stats_set: { health: 100, mana: 100, strength: 80 },
+        inventory_set: [
+            { name: "Iron Sword", count: 1, tags: ["weapon", "sharp"], type: "weapon", icon: "⚔️" },
+            { name: "Health Potion", count: 3, tags: ["consumable", "heal"], type: "consumable", icon: "🧪" },
+            { name: "Map Scroll", count: 1, tags: ["intel", "paper"], type: "intel", icon: "📜" }
+        ],
+        quest_update: "Enter the Citadel",
+        game_over: false,
+        theme_config: { main: "#1a120b", accent: "#d97706" }
     }
 };

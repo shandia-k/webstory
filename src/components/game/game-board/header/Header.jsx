@@ -6,9 +6,14 @@ export function Header({
     isSidebarOpen,
     setIsSidebarOpen,
     isMenuOpen,
-    setIsMenuOpen
+    setIsMenuOpen,
+    quest: propQuest,
+    uiText: propUiText,
+    rightContent
 }) {
-    const { quest, uiText } = useGame();
+    const gameContext = useGame();
+    const quest = propQuest || gameContext.quest;
+    const uiText = propUiText || gameContext.uiText;
 
     return (
         <header className={`h-16 flex items-center justify-between px-4 lg:px-8 border-b border-theme-border bg-theme-main/80 backdrop-blur sticky top-0 transition-colors duration-500 z-30`}>
@@ -27,12 +32,14 @@ export function Header({
             </div>
 
             <div className="relative">
-                <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className={`text-theme-muted hover:text-theme-text p-2 rounded-lg hover:bg-theme-panel transition-colors ${isMenuOpen ? 'bg-theme-panel text-theme-text' : ''}`}
-                >
-                    <MoreHorizontal size={20} />
-                </button>
+                {rightContent ? rightContent : (
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className={`text-theme-muted hover:text-theme-text p-2 rounded-lg hover:bg-theme-panel transition-colors ${isMenuOpen ? 'bg-theme-panel text-theme-text' : ''}`}
+                    >
+                        <MoreHorizontal size={20} />
+                    </button>
+                )}
             </div>
         </header>
     );

@@ -2,11 +2,17 @@ import React, { useMemo } from 'react';
 import { useGame } from '../../../context/GameContext';
 
 export function ParticleLayer() {
-    const { environment } = useGame();
+    const { environment, genre } = useGame();
 
     // Determine particle config based on environment
     const config = useMemo(() => {
-        const env = (environment || '').toUpperCase();
+        let env = (environment || '').toUpperCase();
+
+        // Fallback to genre if environment is empty
+        if (!env) {
+            if (genre === 'rpg') env = 'DUNGEON';
+            else if (genre === 'horror') env = 'HORROR';
+        }
 
         if (env.includes('FOREST') || env.includes('JUNGLE')) {
             return { type: 'spores', count: 20, color: 'bg-emerald-400' };
@@ -23,7 +29,7 @@ export function ParticleLayer() {
 
         // Default (Subtle Dust)
         return { type: 'dust', count: 10, color: 'bg-gray-400' };
-    }, [environment]);
+    }, [environment, genre]);
 
     // Generate random particles
     const particles = useMemo(() => {

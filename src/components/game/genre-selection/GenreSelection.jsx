@@ -37,6 +37,7 @@ export function GenreSelection({ onSelect, onContinue }) {
         { id: 'scifi', label: uiText.FIXED.GENRE_LABELS.SCIFI, icon: '🌆', desc: uiText.UI.GENRES.SCIFI.DESC, color: 'from-blue-600 to-purple-600' },
         { id: 'horror', label: uiText.FIXED.GENRE_LABELS.HORROR, icon: '👁️', desc: uiText.UI.GENRES.HORROR.DESC, color: 'from-red-900 to-black' },
         { id: 'romance', label: uiText.FIXED.GENRE_LABELS.ROMANCE, icon: '🌸', desc: uiText.UI.GENRES.ROMANCE.DESC, color: 'from-pink-500 to-rose-400' },
+        { id: 'rpg', label: uiText.FIXED.GENRE_LABELS.RPG, icon: '🐉', desc: uiText.UI.GENRES.RPG.DESC, color: 'from-amber-700 to-orange-900' },
     ];
 
     return (

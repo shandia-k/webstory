@@ -27,7 +27,7 @@ export function ActionCard({ card, onClick, disabled }) {
     }
 
     const colors = {
-        cyan: 'bg-cyan-950/80 border-cyan-500 text-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]',
+        cyan: 'bg-theme-panel/80 border-theme-accent text-theme-accent hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]', // Mapped to Theme Accent (Red)
         purple: 'bg-purple-950/80 border-purple-500 text-purple-400 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]',
         amber: 'bg-amber-950/80 border-amber-500 text-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]',
         emerald: 'bg-emerald-950/80 border-emerald-500 text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]',

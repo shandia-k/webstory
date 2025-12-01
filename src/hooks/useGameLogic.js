@@ -84,6 +84,27 @@ export function useGameLogic(state, STORAGE_KEY) {
     const handleAction = useCallback(async (input) => {
         // Allow initialization even if gameOver is true
         const isInit = input.startsWith('SYSTEM_INIT_GENRE:');
+
+        // --- SCAVENGER INTERFACE: CLIENT-SIDE ACTIONS ---
+        if (input.startsWith('CLIENT_LOOT:')) {
+            const itemName = input.split(':')[1].trim();
+            updateInventory({ add: [{ name: itemName, count: 1 }] });
+
+            // Add Feedback Message
+            setHistory(prev => [...prev, {
+                id: Date.now(),
+                role: 'system',
+                content: `> ACQUIRED: ${itemName}`,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
+
+            // Remove the loot card from choices to prevent duplicate looting
+            setChoices(prev => prev.filter(c => c.action !== input));
+
+            triggerFeedback(`+ ${itemName}`, "text-emerald-400");
+            return;
+        }
+
         if (!input.trim() || isProcessing || suspenseOutcome || (gameOver && !isInit)) return;
 
         // 1. Add User Message

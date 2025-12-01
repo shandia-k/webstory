@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { SCENARIOS } from "../constants/scenarios";
 import { TRANSLATIONS } from "../constants/textUI";
-import { getMockResponse, getMockSetupData } from "./mockService";
+import { getMockResponse, getMockSetupData, getMockSector } from "./mockService";
 
 const getUiText = (lang) => {
     const langKey = Object.keys(TRANSLATIONS).find(k => k.toLowerCase() === (lang || 'English').toLowerCase()) || 'English';
@@ -70,6 +70,38 @@ ${userInput}
 
 ## LANGUAGE
 Reply in this language: ${gameState.language || 'English'}
+
+## OUTPUT FORMAT (STRICT JSON)
+You are a Game Master. Return a valid JSON object. Do NOT wrap in markdown code blocks.
+Structure:
+{
+  "narrative": "Detailed description of the scene/action result.",
+  "room_id": "unique_id_for_current_room",
+  "map_data": {
+    "name": "Room Name",
+    "exits": {
+      "north": { "type": "OPEN", "target_id": "id_or_unknown" },
+      "east": { "type": "LOCKED", "target_id": "???", "requirement": "Key Name" }
+    }
+  },
+  "interactables": [
+    {
+      "id": "obj_1",
+      "name": "Object Name",
+      "type": "LOOT", // LOOT, TERMINAL, EXAMINE, ENEMY
+      "icon": "box", // box, cpu, search, skull
+      "description": "Visual details.",
+      "action_label": "Open/Hack/Attack",
+      "requirements": { "stat": "tech", "value": 5 }, // Optional
+      "result": {
+        "narrative": "What happens on success.",
+        "items": [{ "name": "Item Name", "count": 1 }], // Optional
+        "stat_updates": { "health": -5 }, // Optional
+        "remove_after": true // If true, object disappears
+      }
+    }
+  ]
+}
 `;
 
         const result = await model.generateContent(prompt);
@@ -78,12 +110,17 @@ Reply in this language: ${gameState.language || 'English'}
 
         // Parse JSON
         try {
-            return JSON.parse(text);
+            // Remove markdown code blocks if present
+            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(cleanText);
         } catch (e) {
             console.error("Failed to parse LLM response:", text);
             // Fallback error response
             return {
                 narrative: "The system glitched. Data corruption detected. (JSON Parse Error)",
+                room_id: "error_room",
+                map_data: { name: "Glitch Space", exits: {} },
+                interactables: [],
                 outcome: "NEUTRAL",
                 stat_updates: {},
                 inventory_updates: { add: [], remove: [] },
@@ -95,6 +132,107 @@ Reply in this language: ${gameState.language || 'English'}
     } catch (error) {
         console.error("Gemini API Error:", error);
         throw error;
+    }
+};
+
+/**
+ * Generates a "Sector" of 5-10 connected rooms.
+ * This is the core of the Pre-Generation architecture.
+ */
+export const generateSector = async (apiKey, gameState, startRoomId = null) => {
+    const uiText = getUiText(gameState.language);
+
+    if (!apiKey) {
+        // Mock fallback for testing without API key
+        if (gameState.isMockMode) return getMockSector(startRoomId);
+        throw new Error(uiText.API_ERRORS.MISSING_KEY);
+    }
+
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            generationConfig: { responseMimeType: "application/json" },
+        });
+
+        const prompt = `
+${SYSTEM_PROMPT}
+
+## TASK: GENERATE SECTOR
+You are a Dungeon Architect. Generate a coherent sector of 5-8 connected rooms.
+Context:
+- Genre: ${gameState.genre}
+- Quest: ${gameState.quest}
+- Current Stats: ${JSON.stringify(gameState.stats)}
+- Start Room ID: ${startRoomId || "room_1"} (This is the entry point)
+
+## OUTPUT FORMAT (STRICT JSON)
+Return a single JSON object with this structure:
+{
+  "sector_id": "sector_${Date.now()}",
+  "narrative_intro": "Atmospheric description of entering this new area.",
+  "start_room_id": "${startRoomId || "room_1"}",
+  "rooms": [
+    {
+      "id": "room_1",
+      "name": "Room Name",
+      "coordinates": { "x": 50, "y": 50 }, // Start room is always center (50,50) relative to sector
+      "exits": { 
+        "north": "room_2",
+        "east": "room_3" 
+      },
+      "description": "Visual description.",
+      "interactables": [
+         {
+            "id": "obj_1",
+            "name": "Crate",
+            "type": "LOOT",
+            "icon": "box",
+            "action_label": "Open",
+            "result": { "narrative": "Found a medkit.", "items": [{ "name": "Medkit", "count": 1 }] }
+         }
+      ]
+    },
+    {
+      "id": "room_2",
+      "name": "Connected Room",
+      "coordinates": { "x": 50, "y": 35 }, // North = y-15, South = y+15, East = x+15, West = x-15
+      "exits": { "south": "room_1" },
+      "interactables": []
+    }
+  ]
+}
+
+## RULES
+1. Ensure all rooms are reachable from the start_room.
+2. Coordinates MUST align with exits (North is Y-15, East is X+15).
+3. Include at least one "Goal" or "Key" item in this sector.
+4. "exits" values MUST be the ID of the target room.
+`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        // Parse JSON
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanText);
+
+    } catch (error) {
+        console.error("Sector Generation Error:", error);
+        // Fallback for error
+        return {
+            sector_id: "error_sector",
+            narrative_intro: "The simulation is unstable. Proceed with caution.",
+            start_room_id: "error_room",
+            rooms: [{
+                id: "error_room",
+                name: "Glitch Space",
+                coordinates: { x: 50, y: 50 },
+                exits: {},
+                interactables: []
+            }]
+        };
     }
 };
 

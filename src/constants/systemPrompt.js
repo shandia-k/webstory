@@ -43,10 +43,16 @@ You must strictly follow this JSON schema. Do not include markdown formatting (l
   },
   "choices": [
     {
-      "label": "Action Label (e.g. 'Hack Terminal')",
-      "action": "The text to send as user action (e.g. 'hack terminal')",
-      "type": "action|skill_check|dice|resource",
-      "meta": { "probability": "60%", "stat": "intelligence", "cost": "10 energy" }
+      "id": "unique_id",
+      "label": "Action Label (e.g. 'Hack Terminal', 'Loot Crate')",
+      "action": "The text to send. FOR LOOT: use 'CLIENT_LOOT:Item Name'. FOR OTHERS: use normal action text.",
+      "type": "action|skill_check|loot|intel|transition",
+      "icon": "optional_lucide_icon_name",
+      "meta": { 
+        "difficulty": "easy|medium|hard", 
+        "loot_item": { "name": "Item Name", "count": 1 },
+        "cost": "10 energy" 
+      }
     }
   ]
 }

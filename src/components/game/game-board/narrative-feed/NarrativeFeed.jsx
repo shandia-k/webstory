@@ -3,8 +3,20 @@ import { useGame } from '../../../../context/GameContext';
 import { MessageBubble } from './MessageBubble';
 import { DiceLoader } from './DiceLoader';
 
-export function NarrativeFeed() {
-    const { history, isProcessing, uiText, suspenseOutcome } = useGame();
+export function NarrativeFeed({
+    history: propHistory,
+    isProcessing: propIsProcessing,
+    uiText: propUiText,
+    suspenseOutcome: propSuspenseOutcome
+}) {
+    const gameContext = useGame();
+
+    // Use props if available, otherwise fallback to context
+    const history = propHistory || gameContext.history;
+    const isProcessing = propIsProcessing !== undefined ? propIsProcessing : gameContext.isProcessing;
+    const uiText = propUiText || gameContext.uiText;
+    const suspenseOutcome = propSuspenseOutcome !== undefined ? propSuspenseOutcome : gameContext.suspenseOutcome;
+
     console.log("NarrativeFeed Render:", { isProcessing, suspenseOutcome }); // DEBUG LOG
     const feedRef = useRef(null);
     const [showFullHistory, setShowFullHistory] = React.useState(false);

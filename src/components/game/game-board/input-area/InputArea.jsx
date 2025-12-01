@@ -45,16 +45,16 @@ export function InputArea({
     }, [choices, inventory]);
 
     return (
-        <div className="w-full bg-slate-900/80 backdrop-blur-md border-t border-slate-700 z-30 transition-all duration-300">
+        <div className="w-full bg-theme-panel/90 backdrop-blur-md border-t border-theme-border z-30 transition-all duration-300">
             {/* Background Grid (Optional, from snippet) */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20" />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20" />
 
             {/* Container: Flexbox Deck */}
             <div className={`
                 max-w-7xl mx-auto flex items-center justify-center
                 transition-all duration-500 ease-in-out
                 ${isExpanded ? 'gap-0' : 'gap-2 md:gap-4'}
-                h-48 md:h-72 /* Reduced height for better feed visibility */
+                h-32 md:h-48 /* Ultra compact height (approx 1/5 screen) */
                 p-4
             `}>
 
@@ -64,7 +64,7 @@ export function InputArea({
                     flex flex-col transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]
                     ${isExpanded
                         ? 'flex-[100] w-full cursor-default'
-                        : 'flex-1 max-w-[120px] md:max-w-[180px] cursor-pointer hover:-translate-y-2 hover:shadow-xl'
+                        : 'flex-1 max-w-[100px] md:max-w-[140px] cursor-pointer hover:-translate-y-2 hover:shadow-xl'
                     }
                 `}>
                     <TextArea
@@ -87,7 +87,7 @@ export function InputArea({
                             flex flex-col transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]
                             ${isExpanded
                                 ? 'flex-[0] w-0 opacity-0 pointer-events-none p-0 m-0 border-0'
-                                : 'flex-1 max-w-[120px] md:max-w-[180px] cursor-pointer hover:-translate-y-2 hover:shadow-xl'
+                                : 'flex-1 max-w-[100px] md:max-w-[140px] cursor-pointer hover:-translate-y-2 hover:shadow-xl'
                             }
                         `}
                     >
@@ -102,7 +102,7 @@ export function InputArea({
 
                 {/* Empty State / Spacer */}
                 {!isExpanded && cards.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center h-full text-slate-500 text-xs italic border-2 border-dashed border-slate-800 rounded-xl">
+                    <div className="flex-1 flex items-center justify-center h-full text-theme-muted text-xs italic border-2 border-dashed border-theme-border rounded-xl bg-theme-panel/50">
                         No Actions
                     </div>
                 )}

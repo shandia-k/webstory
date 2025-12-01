@@ -2,7 +2,7 @@ import React from 'react';
 import { useGame } from '../../../context/GameContext';
 
 export function BackgroundLayer() {
-    const { environment } = useGame();
+    const { environment, genre } = useGame();
     console.log("BackgroundLayer Environment:", environment); // DEBUG LOG
 
     // Map environment tags to image paths
@@ -17,8 +17,16 @@ export function BackgroundLayer() {
         'SCIFI': '/webstory/assets/backgrounds/cyberpunk.png' // Default Fallback
     };
 
+    // Determine effective environment key
+    let envKey = environment;
+    if (!envKey) {
+        if (genre === 'rpg') envKey = 'DUNGEON';
+        else if (genre === 'horror') envKey = 'HORROR';
+        else envKey = 'SCIFI';
+    }
+
     // Default to SCIFI if environment is missing or not found
-    const currentBg = bgMap[environment] || bgMap['SCIFI'];
+    const currentBg = bgMap[envKey] || bgMap[environment] || bgMap['SCIFI'];
 
     return (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">

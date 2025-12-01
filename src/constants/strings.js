@@ -8,6 +8,7 @@ const TEXT_FIXED = {
         SCIFI: "Cyberpunk 2077",
         HORROR: "Cosmic Horror",
         ROMANCE: "Neo-Tokyo Romance",
+        RPG: "Classic Fantasy",
     }
 };
 

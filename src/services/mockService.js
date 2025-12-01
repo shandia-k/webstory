@@ -175,3 +175,114 @@ export const getMockSetupData = async () => {
         intro_narrative: "The simulation initializes. Your identity constructs are forming..."
     };
 };
+
+/**
+ * Returns the mock dungeon data for the Test Lab.
+ */
+/**
+ * Returns the mock dungeon data for the Test Lab.
+ */
+export const getMockDungeonData = () => {
+    return {
+        quest_name: "The Crypt of Shadows",
+        objective: "Find 3 Golden Relics to unlock the Exit Gate.",
+        start_room: "entrance",
+        rooms: {
+            "entrance": {
+                name: "Dark Entrance",
+                desc: "You stand before an ancient iron gate. The air is cold and smells of damp earth. A dark corridor stretches to the North.",
+                exits: { north: "hallway" },
+                loot: null
+            },
+            "hallway": {
+                name: "Grand Hallway",
+                desc: "A stone corridor with extinguished torches. There is a fork in the path. The sound of dripping water echoes from the East.",
+                exits: { south: "entrance", east: "pool", west: "armory", north: "throne_room" },
+                loot: null
+            },
+            "pool": {
+                name: "Murky Pool",
+                desc: "A pool of murky water fills this room. Something glimmers at the bottom.",
+                exits: { west: "hallway" },
+                loot: { id: "relic_cup", name: "Golden Chalice", desc: "An ancient golden cup.", type: "RELIC" },
+                isHidden: true
+            },
+            "armory": {
+                name: "Old Armory",
+                desc: "Rusted weapon racks line the walls. A smashed wooden crate sits in the corner.",
+                exits: { east: "hallway" },
+                loot: { id: "sword_rusty", name: "Iron Dagger", desc: "Still sharp enough.", type: "WEAPON" },
+                isHidden: true
+            },
+            "throne_room": {
+                name: "Throne Room",
+                desc: "A massive room with a stone throne. An Ancient Guardian blocks your path!",
+                exits: { south: "hallway", east: "secret_chamber" },
+                enemy: { name: "Ancient Guardian", hp: 50, maxHp: 50, damage: 8 },
+                loot: { id: "relic_crown", name: "Golden Crown", desc: "The lost king's crown.", type: "RELIC" },
+                isHidden: true
+            },
+            "secret_chamber": {
+                name: "Hidden Altar",
+                desc: "A small dusty chamber. On a stone altar lies the final object you seek.",
+                exits: { west: "throne_room" },
+                loot: { id: "relic_gem", name: "Sun Gem", desc: "A warm glowing gem.", type: "RELIC" },
+                isHidden: false
+            }
+        }
+    };
+};
+
+/**
+ * Generates a Mock Sector for Pre-Generation testing.
+ */
+export const getMockSector = (startRoomId = "mock_start") => {
+    return {
+        sector_id: "sector_mock_01",
+        narrative_intro: "[MOCK] You enter a simulated sector. The environment flickers with digital artifacts.",
+        start_room_id: startRoomId,
+        rooms: [
+            {
+                id: startRoomId,
+                name: "Simulation Hub",
+                coordinates: { x: 50, y: 50 },
+                exits: { north: "mock_hall_1", east: "mock_storage" },
+                description: "A central hub with glowing data streams.",
+                interactables: []
+            },
+            {
+                id: "mock_hall_1",
+                name: "Data Corridor",
+                coordinates: { x: 50, y: 35 }, // North
+                exits: { south: startRoomId, north: "mock_core" },
+                description: "A long corridor pulsing with blue light.",
+                interactables: []
+            },
+            {
+                id: "mock_storage",
+                name: "Cache Node",
+                coordinates: { x: 65, y: 50 }, // East
+                exits: { west: startRoomId },
+                description: "A storage node containing archived items.",
+                interactables: [
+                    {
+                        id: "mock_crate",
+                        name: "Data Crate",
+                        type: "LOOT",
+                        icon: "box",
+                        action_label: "Open",
+                        result: { narrative: "You found a resource pack.", items: [{ name: "Energy Cell", count: 1 }] }
+                    }
+                ]
+            },
+            {
+                id: "mock_core",
+                name: "Sector Core",
+                coordinates: { x: 50, y: 20 }, // North of Hall
+                exits: { south: "mock_hall_1" },
+                description: "The processing core of this sector.",
+                interactables: []
+            }
+        ]
+    };
+};

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Zap, Heart, Shield, ChevronRight } from 'lucide-react';
 
-export function RoleDetails({ uiText, currentRole, includeItems, name, handleConfirm }) {
+export function RoleDetails({ uiText, currentRole, includeItems, name, handleConfirm, confirmButtonText }) {
     return (
         <div className="bg-theme-panel border border-theme-border rounded-2xl p-6 md:p-8 flex flex-col animate-in slide-in-from-right-4 duration-700 delay-200 relative overflow-hidden">
             {/* Background Deco */}
@@ -77,7 +77,7 @@ export function RoleDetails({ uiText, currentRole, includeItems, name, handleCon
                         : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                         }`}
                 >
-                    <span>{uiText.UI.CHARACTER_CREATION.BTN_INITIATE}</span>
+                    <span>{confirmButtonText || uiText.UI.CHARACTER_CREATION.BTN_INITIATE}</span>
                     <ChevronRight size={20} />
                 </button>
             </div>

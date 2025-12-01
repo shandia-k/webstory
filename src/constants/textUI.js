@@ -118,6 +118,9 @@ const TEXT_UI_EN = {
         ROMANCE: {
             DESC: "Love and heartbreak in a digital age.",
         },
+        RPG: {
+            DESC: "Epic quests, magic, and dragons.",
+        },
     },
     NARRATIVE: {
         PROCESSING: "Nexus processing...",
@@ -243,6 +246,9 @@ const TEXT_UI_ID = {
         },
         ROMANCE: {
             DESC: "Cinta dan patah hati di era digital.",
+        },
+        RPG: {
+            DESC: "Misi epik, sihir, dan naga.",
         },
     },
     NARRATIVE: {

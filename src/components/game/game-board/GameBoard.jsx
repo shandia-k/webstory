@@ -8,6 +8,11 @@ import { InputArea } from './input-area/InputArea';
 import { BackgroundLayer } from './BackgroundLayer';
 import { ParticleLayer } from './ParticleLayer';
 import { GameOverOverlay } from './GameOverOverlay';
+import { QTEOverlay } from './QTEOverlay';
+
+// RPG Patch Imports
+import { DungeonMap } from '../../../features/rpg/components/DungeonMap';
+import { useRPGController } from '../../../features/rpg/hooks/useRPGController.jsx';
 
 export function GameBoard({ setGameStarted }) {
     const {
@@ -23,8 +28,17 @@ export function GameBoard({ setGameStarted }) {
         feedback, triggerFeedback,
         setStats,
         choices, inventory, // Need choices and inventory
-        allowCombo // Need allowCombo from state
+        allowCombo, // Need allowCombo from state
+        uiText
     } = useGame();
+
+    // --- RPG PATCH HOOK ---
+    // Only initialized if genre is RPG, but hooks can't be conditional.
+    // We'll initialize it always but only use it if genre === 'rpg'.
+    // In a real app, we might want to split this into a sub-component to avoid running hook logic unnecessarily.
+    // For now, the overhead is low.
+    const rpgState = useRPGController();
+    const isRPG = genre === 'rpg';
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [inputValue, setInputValue] = useState("");
@@ -41,10 +55,14 @@ export function GameBoard({ setGameStarted }) {
     }, [gameOver]);
 
     const handleSend = (action) => {
-        const input = typeof action === 'string' ? action : inputValue;
-        if (input.trim()) {
-            handleAction(input);
-            setInputValue("");
+        if (isRPG) {
+            rpgState.handleSend(action);
+        } else {
+            const input = typeof action === 'string' ? action : inputValue;
+            if (input.trim()) {
+                handleAction(input);
+                setInputValue("");
+            }
         }
     };
 
@@ -88,6 +106,27 @@ export function GameBoard({ setGameStarted }) {
         wrapperClass = "animate-shake";
         overlayClass = "bg-[radial-gradient(circle_at_center,transparent_20%,rgba(220,38,38,0.6)_100%)] mix-blend-hard-light";
     }
+
+    // --- RPG STATE OVERRIDES ---
+    // If RPG, we override the props passed to global modules
+    const activeInventory = isRPG ? rpgState.inventory : inventory;
+    const activeChoices = isRPG ? rpgState.choices : choices;
+    const activeHistory = isRPG ? rpgState.feed : useGame().history; // Access history directly from context to avoid conflict
+    const activeHandleAction = isRPG ? rpgState.handleAction : handleAction;
+    const activeInputValue = isRPG ? rpgState.inputValue : inputValue;
+    const activeSetInputValue = isRPG ? rpgState.setInputValue : setInputValue;
+    const activeIsProcessing = isRPG ? rpgState.isProcessing : useGame().isProcessing;
+
+    // RPG Stats Mapping
+    const activeStats = isRPG ? {
+        health: rpgState.combatState.playerHp,
+        maxHealth: 100,
+        energy: 100, // Placeholder
+        maxEnergy: 100,
+        level: 1,
+        xp: 0,
+        maxXp: 100
+    } : useGame().stats;
 
     return (
         <div className={`flex h-screen bg-transparent relative transition-all duration-300 ${wrapperClass}`}>
@@ -166,6 +205,10 @@ export function GameBoard({ setGameStarted }) {
             <Sidebar
                 isSidebarOpen={isSidebarOpen}
                 setIsSidebarOpen={setIsSidebarOpen}
+                // Prop Fallback Injection
+                stats={activeStats}
+                inventory={activeInventory}
+                handleAction={activeHandleAction}
             />
 
             {/* --- MAIN CONTENT --- */}
@@ -183,27 +226,53 @@ export function GameBoard({ setGameStarted }) {
                     setIsSidebarOpen={setIsSidebarOpen}
                     isMenuOpen={isMenuOpen}
                     setIsMenuOpen={setIsMenuOpen}
+                    quest={isRPG ? `RPG // ${rpgState.currentRoom?.name?.toUpperCase() || "UNKNOWN"}` : undefined}
                 />
 
                 {/* Content Area */}
                 <div className="flex-1 min-h-0 relative flex flex-col">
-                    <div
-                        className="flex-1 min-h-0 flex flex-col"
-                        onMouseEnter={() => setIsFocusingText(true)}
-                        onMouseLeave={() => setIsFocusingText(false)}
-                    >
-                        <NarrativeFeed handleSend={handleSend} />
-                    </div>
+
+                    {/* RPG LAYOUT: Split View (Map + Feed) */}
+                    {isRPG ? (
+                        <div className="flex-1 min-h-0 flex relative">
+                            {/* Col 1: Tactical Map (Left, 2/3) */}
+                            <div className="w-2/3 relative border-r border-slate-700/50 bg-slate-900/20 backdrop-blur-sm">
+                                <DungeonMap
+                                    rooms={rpgState.useRealAI ? rpgState.roomRegistry : rpgState.gameData.rooms}
+                                    currentRoomId={rpgState.currentRoomId}
+                                    visitedIds={rpgState.useRealAI ? rpgState.visitedIds : new Set([rpgState.currentRoomId])}
+                                />
+                            </div>
+
+                            {/* Col 2: Feed (Right, 1/3) */}
+                            <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
+                                <NarrativeFeed
+                                    history={activeHistory}
+                                    isProcessing={activeIsProcessing}
+                                    uiText={{ UI: { FEED: { TYPING: "Dungeon Master thinking..." } } }}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        /* STANDARD LAYOUT: Full Feed */
+                        <div
+                            className="flex-1 min-h-0 flex flex-col"
+                            onMouseEnter={() => setIsFocusingText(true)}
+                            onMouseLeave={() => setIsFocusingText(false)}
+                        >
+                            <NarrativeFeed handleSend={handleSend} />
+                        </div>
+                    )}
                 </div>
 
-                {/* UNIFIED INPUT AREA (Replaces HoloDeck & Old InputArea) */}
+                {/* UNIFIED INPUT AREA */}
                 <InputArea
-                    inputValue={inputValue}
-                    setInputValue={setInputValue}
+                    inputValue={activeInputValue}
+                    setInputValue={activeSetInputValue}
                     handleSend={handleSend}
-                    choices={choices}
-                    inventory={inventory}
-                    handleAction={handleAction}
+                    choices={activeChoices}
+                    inventory={activeInventory}
+                    handleAction={activeHandleAction}
                     disabled={gameOver}
                 />
 
