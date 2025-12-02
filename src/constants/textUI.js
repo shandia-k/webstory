@@ -108,20 +108,6 @@ const TEXT_UI_EN = {
         MOOD: "Mood",
         CHARM: "Charm",
     },
-    GENRES: {
-        SCIFI: {
-            DESC: "High-tech, low-life. Neon lights and chrome.",
-        },
-        HORROR: {
-            DESC: "Ancient madness in a derelict station.",
-        },
-        ROMANCE: {
-            DESC: "Love and heartbreak in a digital age.",
-        },
-        RPG: {
-            DESC: "Epic quests, magic, and dragons.",
-        },
-    },
     NARRATIVE: {
         PROCESSING: "Nexus processing...",
     }
@@ -236,20 +222,6 @@ const TEXT_UI_ID = {
         STAMINA: "Stamina",
         MOOD: "Mood",
         CHARM: "Pesona",
-    },
-    GENRES: {
-        SCIFI: {
-            DESC: "Teknologi tinggi, hidup rendah. Lampu neon dan krom.",
-        },
-        HORROR: {
-            DESC: "Kegilaan kuno di stasiun terlantar.",
-        },
-        ROMANCE: {
-            DESC: "Cinta dan patah hati di era digital.",
-        },
-        RPG: {
-            DESC: "Misi epik, sihir, dan naga.",
-        },
     },
     NARRATIVE: {
         PROCESSING: "Nexus memproses...",

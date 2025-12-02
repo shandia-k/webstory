@@ -2,11 +2,32 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { SCENARIOS } from "../constants/scenarios";
 import { TRANSLATIONS } from "../constants/textUI";
-import { getMockResponse, getMockSetupData, getMockSector } from "./mockService";
+
 
 const getUiText = (lang) => {
     const langKey = Object.keys(TRANSLATIONS).find(k => k.toLowerCase() === (lang || 'English').toLowerCase()) || 'English';
     return TRANSLATIONS[langKey];
+};
+
+// Helper to save debug logs to localStorage
+const saveDebugLog = (data, type = "RESPONSE") => {
+    try {
+        const history = JSON.parse(localStorage.getItem('nexus_debug_history') || '[]');
+        const now = new Date();
+        const timestamp = `${now.getDate().toString().padStart(2, '0')}:${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+        const newEntry = {
+            id: Date.now(),
+            timestamp: timestamp,
+            type: type,
+            data: data
+        };
+
+        const updatedHistory = [newEntry, ...history].slice(0, 20); // Keep max 20
+        localStorage.setItem('nexus_debug_history', JSON.stringify(updatedHistory));
+    } catch (e) {
+        console.error("Failed to save debug log", e);
+    }
 };
 
 export const generateGameResponse = async (apiKey, userInput, gameState) => {
@@ -33,11 +54,6 @@ export const generateGameResponse = async (apiKey, userInput, gameState) => {
         throw new Error(uiText.API_ERRORS.MISSING_KEY);
     }
 
-    // --- MOCK MODE FOR TESTING ---
-    if (gameState.isMockMode) {
-        return getMockResponse(userInput, gameState);
-    }
-
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
@@ -55,8 +71,11 @@ export const generateGameResponse = async (apiKey, userInput, gameState) => {
         const prompt = `
 ${SYSTEM_PROMPT}
 
+## GAME CONFIGURATION
+Game Mode: ${gameState.gameMode} (${gameState.gameMode === 'rpg' ? 'Strict Mechanics, Stats, Inventory, Map' : 'Narrative Focus, Storytelling, No Stats'})
+Theme/Atmosphere: ${gameState.theme} (Adopt this tone/style)
+
 ## CURRENT STATE
-Genre: ${gameState.genre}
 Quest: ${gameState.quest}
 Stats: ${JSON.stringify(gameState.stats)}
 Inventory: ${JSON.stringify(gameState.inventory.map(i => i.name))}
@@ -89,18 +108,44 @@ Structure:
       "id": "obj_1",
       "name": "Object Name",
       "type": "LOOT", // LOOT, TERMINAL, EXAMINE, ENEMY
-      "icon": "box", // box, cpu, search, skull
+      "icon": "📦", // Emoji icon
       "description": "Visual details.",
       "action_label": "Open/Hack/Attack",
       "requirements": { "stat": "tech", "value": 5 }, // Optional
       "result": {
         "narrative": "What happens on success.",
-        "items": [{ "name": "Item Name", "count": 1 }], // Optional
+        "items": [
+            { 
+                "name": "Item Name", 
+                "count": 1, 
+                "type": "consumable", 
+                "icon": "❤️", 
+                "desc": "Short description", 
+                "tags": ["TAG"],
+                "value": 1, 
+                "max_value": 1
+            }
+        ],
         "stat_updates": { "health": -5 }, // Optional
         "remove_after": true // If true, object disappears
       }
     }
-  ]
+  ],
+  "inventory_updates": {
+      "add": [
+          { 
+              "name": "Item Name", 
+              "count": 1, 
+              "type": "misc", 
+              "icon": "💎", 
+              "desc": "Description", 
+              "tags": ["TAG"] 
+          }
+      ],
+      "remove": [
+          { "name": "Item Name", "count": 1 }
+      ]
+  }
 }
 `;
 
@@ -112,7 +157,9 @@ Structure:
         try {
             // Remove markdown code blocks if present
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(cleanText);
+            const parsed = JSON.parse(cleanText);
+            saveDebugLog(parsed, "GAME_RESPONSE");
+            return parsed;
         } catch (e) {
             console.error("Failed to parse LLM response:", text);
             // Fallback error response
@@ -143,8 +190,6 @@ export const generateSector = async (apiKey, gameState, startRoomId = null) => {
     const uiText = getUiText(gameState.language);
 
     if (!apiKey) {
-        // Mock fallback for testing without API key
-        if (gameState.isMockMode) return getMockSector(startRoomId);
         throw new Error(uiText.API_ERRORS.MISSING_KEY);
     }
 
@@ -161,10 +206,15 @@ ${SYSTEM_PROMPT}
 ## TASK: GENERATE SECTOR
 You are a Dungeon Architect. Generate a coherent sector of 5-8 connected rooms.
 Context:
-- Genre: ${gameState.genre}
+- Game Mode: ${gameState.gameMode}
+- Theme: ${gameState.theme}
 - Quest: ${gameState.quest}
+- Character Name: ${gameState.playerName || "Unknown"}
+- Role: ${gameState.playerRole || "Survivor"}
+- Bio: ${gameState.playerBio || "N/A"}
 - Current Stats: ${JSON.stringify(gameState.stats)}
 - Start Room ID: ${startRoomId || "room_1"} (This is the entry point)
+- Language: ${gameState.language || 'English'} (Generate all names and descriptions in this language)
 
 ## OUTPUT FORMAT (STRICT JSON)
 Return a single JSON object with this structure:
@@ -186,10 +236,25 @@ Return a single JSON object with this structure:
          {
             "id": "obj_1",
             "name": "Crate",
-            "type": "LOOT",
-            "icon": "box",
+            "type": "LOOT", // LOOT, TERMINAL, EXAMINE, ENEMY
+            "icon": "📦", // Emoji icon
+            "description": "A rusted supply crate.",
             "action_label": "Open",
-            "result": { "narrative": "Found a medkit.", "items": [{ "name": "Medkit", "count": 1 }] }
+            "result": { 
+                "narrative": "Found a medkit.", 
+                "items": [
+                    { 
+                        "name": "Medkit", 
+                        "count": 1, 
+                        "type": "consumable", 
+                        "icon": "❤️", 
+                        "desc": "Restores 20 HP", 
+                        "tags": ["HEAL"],
+                        "value": 1, // Current durability/charges
+                        "max_value": 1 // Max durability/charges
+                    }
+                ] 
+            }
          }
       ]
     },
@@ -208,6 +273,7 @@ Return a single JSON object with this structure:
 2. Coordinates MUST align with exits (North is Y-15, East is X+15).
 3. Include at least one "Goal" or "Key" item in this sector.
 4. "exits" values MUST be the ID of the target room.
+5. **ITEMS**: Must have \`name\`, \`count\`, \`type\`, \`icon\` (emoji), \`desc\`, \`tags\`. Optional: \`value\`/\`max_value\` for durability.
 `;
 
         const result = await model.generateContent(prompt);
@@ -216,7 +282,9 @@ Return a single JSON object with this structure:
 
         // Parse JSON
         const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanText);
+        const parsed = JSON.parse(cleanText);
+        saveDebugLog(parsed, "SECTOR_GEN");
+        return parsed;
 
     } catch (error) {
         console.error("Sector Generation Error:", error);
@@ -265,7 +333,7 @@ export const testApiKey = async (apiKey, language) => {
 
 export const CRITICAL_UI_KEYS = [
     'HEADER', 'SIDEBAR', 'MENU', 'INPUT_PLACEHOLDER', 'INPUT_FOOTER',
-    'STATS', 'NARRATIVE', 'GENRE_SELECTION', 'GENRES', 'CHARACTER_CREATION'
+    'STATS', 'NARRATIVE', 'GENRE_SELECTION', 'CHARACTER_CREATION'
 ];
 
 export const getUiBatches = (fullText) => {
@@ -287,25 +355,22 @@ export const getUiBatches = (fullText) => {
  * Generates initial game setup data (roles, names, items) based on genre.
  */
 export const generateGameSetup = async (apiKey, genre, language) => {
-    const isMock = localStorage.getItem('nexus_mock_mode') === 'true';
-    if (!apiKey && !isMock) {
-        throw new Error("API Key missing. Please configure in Settings or enable Mock Mode.");
-    }
-
-    // Mock Mode
-    if (localStorage.getItem('nexus_mock_mode') === 'true') {
-        return getMockSetupData();
+    const isMock = false;
+    if (!apiKey) {
+        throw new Error("API Key missing. Please configure in Settings.");
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
-    Generate a JSON object for a Sci-Fi RPG Character Creation screen.
-    Genre: ${genre}
+    ${SYSTEM_PROMPT}
+
+    ## TASK: GENERATE CHARACTER CREATION DATA
+    Context: ${genre}
     Language: ${language}
 
-    Output JSON Structure:
+    ## OUTPUT FORMAT (STRICT JSON)
     {
         "suggested_names": ["Name1", "Name2", ...],
         "roles": [
@@ -313,18 +378,36 @@ export const generateGameSetup = async (apiKey, genre, language) => {
                 "id": "role_id",
                 "name": "Role Name",
                 "description": "Short description",
-                "stats": { "health": 100, "energy": 100, "stat3": 50, "stat4": 50 },
+                "stats": { "health": 100, "energy": 100, "hacking": 45, "stealth": 60 },
+                "stat_definitions": {
+                    "health": { "category": "vital", "icon": "❤️", "description": "Life force", "color": "red" },
+                    "energy": { "category": "vital", "icon": "⚡", "description": "Action resource", "color": "yellow" },
+                    "hacking": { "category": "skill", "icon": "💻", "description": "Tech proficiency", "color": "blue" },
+                    "stealth": { "category": "skill", "icon": "👻", "description": "Avoid detection", "color": "gray" }
+                },
                 "starting_items": [
-                    { "name": "Item Name", "count": 1, "type": "tool/weapon/consumable", "icon": "emoji" }
+                    { 
+                        "name": "Item Name", 
+                        "count": 1, 
+                        "type": "weapon", // weapon, tool, consumable, key, misc
+                        "icon": "🔫", 
+                        "desc": "Short item description",
+                        "tags": ["STARTING"]
+                    }
                 ]
             }
         ],
         "intro_narrative": "Short atmospheric text setting the scene for character creation."
     }
     
-    Provide 3 distinct roles (e.g., Combat, Tech, Stealth/Social).
-    Ensure items have valid types and emojis.
-    IMPORTANT: Generate 3-5 vital statistics relevant to the genre (e.g., Sanity for Horror, Charm for Romance, Shield for Sci-Fi). Do NOT limit to just health/energy.
+    ## RULES
+    1. Provide 3 distinct roles.
+    2. **STATS GENERATION**:
+       - Generate 2-3 **VITAL** stats (e.g., Health, Sanity, Battery). These deplete and cause failure/death if 0. Scale: 0-100.
+       - Generate 3-4 **SKILL** stats (e.g., Hacking, Charisma, Strength). These determine success chance. Scale: 0-100.
+       - Combine ALL into the single "stats" object.
+       - Define their category ("vital" or "skill") in "stat_definitions".
+    3. Ensure items have valid types, icons, and descriptions.
     `;
 
     try {
@@ -333,7 +416,9 @@ export const generateGameSetup = async (apiKey, genre, language) => {
         const text = response.text();
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            const parsed = JSON.parse(jsonMatch[0]);
+            saveDebugLog(parsed, "CHAR_SETUP");
+            return parsed;
         }
         throw new Error("Failed to parse JSON");
     } catch (error) {
@@ -345,9 +430,12 @@ export const generateGameSetup = async (apiKey, genre, language) => {
 export const translateUiSubset = async (apiKey, targetLanguage, uiSubset) => {
     if (!apiKey) throw new Error("API Key Missing");
 
-    if (localStorage.getItem('nexus_mock_mode') === 'true') {
-        return uiSubset; // No translation in mock
-    }
+    if (!apiKey) throw new Error("API Key Missing");
+
+    // Only skip if explicitly in mock mode AND no key (though check above covers no key)
+    // Actually, if we have a key, we should try to translate even if in mock mode for other things.
+    // But if the user wants purely mock experience, maybe they don't want API calls?
+    // However, UI translation is a setup step. Let's allow it if key is valid.
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -363,16 +451,15 @@ export const translateUiSubset = async (apiKey, targetLanguage, uiSubset) => {
         });
 
         const prompt = `
-You are a professional translator for a Sci-Fi RPG Game UI.
+You are a professional translator for a Role-Playing Game (RPG) UI.
 Translate the following JSON object values into this language: "${targetLanguage}".
 Do NOT translate keys. Keep the structure exactly the same.
-Maintain the tone: Sci-Fi, Cyberpunk, Serious, Immersive.
+Maintain a professional, immersive gaming tone.
 
 IMPORTANT RULES:
 1. Use FORMAL, STANDARD language only.
 2. STRICTLY FORBID slang, informal, or "gaul" language.
 3. If the requested language is a slang variant (e.g., "Bahasa Gaul", "Slang"), translate it to the STANDARD FORMAL version of that language (e.g., standard Indonesian).
-4. Ensure terminology fits a futuristic sci-fi setting.
 
 Source JSON:
 ${JSON.stringify(uiSubset, null, 2)}
@@ -383,7 +470,9 @@ ${JSON.stringify(uiSubset, null, 2)}
         const text = response.text();
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            const parsed = JSON.parse(jsonMatch[0]);
+            saveDebugLog(parsed, "UI_TRANSLATE");
+            return parsed;
         }
         return uiSubset;
     } catch (error) {

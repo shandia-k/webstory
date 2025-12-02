@@ -1,24 +1,36 @@
 import React, { useState } from 'react';
-import { Bug, Skull, Heart, Plus, Trash2, Zap, ToggleLeft, ToggleRight, Check, XCircle } from 'lucide-react';
+import { Bug, Skull, Heart, Plus, Trash2, Zap, FileText } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
+import { saveGameToFile } from '../../utils/fileHandler';
 
 export function DebugMenu() {
     const [isOpen, setIsOpen] = useState(false);
+    const [debugLogs, setDebugLogs] = useState([]);
+    const [selectedLogId, setSelectedLogId] = useState("");
+
+    // Load logs when menu opens
+    React.useEffect(() => {
+        if (isOpen) {
+            try {
+                const savedLogs = JSON.parse(localStorage.getItem('nexus_debug_history') || '[]');
+                setDebugLogs(savedLogs);
+                if (savedLogs.length > 0) {
+                    setSelectedLogId(savedLogs[0].id); // Auto-select newest
+                }
+            } catch (e) {
+                console.error("Failed to load debug logs", e);
+            }
+        }
+    }, [isOpen]);
     const {
         stats, setStats,
         inventory, setInventory,
         setGameOver,
         setLastOutcome,
-        isMockMode, setIsMockMode,
         handleAction, // Added handleAction
-        setQteActive // Added setQteActive
+        setQteActive, // Added setQteActive
+        rpgState // Added rpgState
     } = useGame();
-
-    const toggleMockMode = () => {
-        const newValue = !isMockMode;
-        setIsMockMode(newValue);
-        localStorage.setItem('nexus_mock_mode', newValue);
-    };
 
     const damageCharacter = () => {
         setStats(prev => {
@@ -71,59 +83,8 @@ export function DebugMenu() {
                         <span className="text-[10px] text-gray-500">v0.1</span>
                     </div>
 
-                    {/* Mock Mode Toggle */}
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">Mock LLM Mode</span>
-                        <button
-                            onClick={toggleMockMode}
-                            className={`text-2xl transition-colors ${isMockMode ? 'text-green-400' : 'text-gray-600'}`}
-                        >
-                            {isMockMode ? <ToggleRight /> : <ToggleLeft />}
-                        </button>
-                    </div>
-
                     {/* Actions */}
                     <div className="grid grid-cols-2 gap-2">
-                        {/* Mock Commands (Only visible in Mock Mode) */}
-                        {isMockMode && (
-                            <>
-                                <button
-                                    onClick={() => handleAction('mock:success')}
-                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-green-900/30 hover:bg-green-900/50 text-green-400 rounded-lg border border-green-900/50 transition-colors"
-                                >
-                                    <Check size={16} />
-                                    <span className="text-[10px]">Mock Success</span>
-                                </button>
-                                <button
-                                    onClick={() => handleAction('mock:fail')}
-                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 rounded-lg border border-rose-900/50 transition-colors"
-                                >
-                                    <XCircle size={16} />
-                                    <span className="text-[10px]">Mock Fail</span>
-                                </button>
-                                <button
-                                    onClick={() => handleAction('mock:cards')}
-                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-purple-900/30 hover:bg-purple-900/50 text-purple-400 rounded-lg border border-purple-900/50 transition-colors"
-                                >
-                                    <Zap size={16} />
-                                    <span className="text-[10px]">Test Cards</span>
-                                </button>
-                                <button
-                                    onClick={() => handleAction('mock:loot')}
-                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-amber-900/30 hover:bg-amber-900/50 text-amber-400 rounded-lg border border-amber-900/50 transition-colors"
-                                >
-                                    <Plus size={16} />
-                                    <span className="text-[10px]">Mock Loot</span>
-                                </button>
-                                <button
-                                    onClick={() => setQteActive(true)}
-                                    className="flex flex-col items-center justify-center gap-1 p-2 bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-400 rounded-lg border border-yellow-900/50 transition-colors"
-                                >
-                                    <Zap size={16} />
-                                    <span className="text-[10px]">Trigger QTE</span>
-                                </button>
-                            </>
-                        )}
 
                         <button
                             onClick={healCharacter}
@@ -160,6 +121,49 @@ export function DebugMenu() {
                             <Skull size={16} />
                             <span className="text-[10px]">KILL PLAYER (TEST GAME OVER)</span>
                         </button>
+
+                        {/* Debug Logs Section */}
+                        <div className="col-span-2 border-t border-gray-800 pt-2 mt-2">
+                            <label className="text-[10px] text-gray-500 uppercase block mb-1">Raw JSON Logs</label>
+                            <select
+                                className="w-full bg-gray-800 text-gray-300 text-[10px] p-1 rounded border border-gray-700 mb-2"
+                                value={selectedLogId}
+                                onChange={(e) => setSelectedLogId(Number(e.target.value))}
+                            >
+                                <option value="">Select a log...</option>
+                                {debugLogs.map(log => (
+                                    <option key={log.id} value={log.id}>
+                                        [{log.timestamp}] {log.type}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const logToDownload = debugLogs.find(l => l.id === selectedLogId);
+
+                                        if (logToDownload) {
+                                            const fileName = `nexus_raw_${logToDownload.type}_${logToDownload.timestamp.replace(/:/g, '-')}.json`;
+                                            await saveGameToFile(logToDownload.data, fileName);
+                                        } else {
+                                            alert("Please select a log to download.");
+                                        }
+                                    } catch (error) {
+                                        console.error("Download failed:", error);
+                                        alert(`Download failed: ${error.message}`);
+                                    }
+                                }}
+                                disabled={!selectedLogId}
+                                className={`flex flex-col items-center justify-center gap-1 p-2 w-full rounded-lg border transition-colors ${selectedLogId
+                                    ? 'bg-purple-900/30 hover:bg-purple-900/50 text-purple-400 border-purple-900/50'
+                                    : 'bg-gray-800/50 text-gray-600 border-gray-800 cursor-not-allowed'
+                                    }`}
+                            >
+                                <FileText size={16} />
+                                <span className="text-[10px]">DOWNLOAD SELECTED JSON</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

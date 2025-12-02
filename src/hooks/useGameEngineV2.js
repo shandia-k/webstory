@@ -17,16 +17,20 @@ export function useGameEngineV2() {
     return {
         // State
         stats: gameState.stats,
+        statDefinitions: gameState.statDefinitions,
         inventory: gameState.inventory,
         quest: gameState.quest,
         history: gameState.history,
         isProcessing: gameState.isProcessing,
         suspenseOutcome, // Exposed Suspense State
-        genre: gameState.genre,
+        gameMode: gameState.gameMode,
+        theme: gameState.theme,
         environment: gameState.environment, // Exposed Dynamic Environment
         lastOutcome: gameState.lastOutcome,
         gameOver: gameState.gameOver,
         choices: gameState.choices,
+        rpgState: gameState.rpgState,
+        setRpgState: gameState.setRpgState,
 
         // Character Creation State
         playerName: gameState.playerName,
@@ -40,7 +44,8 @@ export function useGameEngineV2() {
         handleAction,
         resetGame,
         initializeGame,
-        setGenre: gameState.setGenre, // Exposed for direct genre switching if needed
+        setGameMode: gameState.setGameMode,
+        setTheme: gameState.setTheme,
         quitGame,
 
         // Persistence
@@ -56,8 +61,6 @@ export function useGameEngineV2() {
         setLanguage: gameState.setLanguage,
         uiText: gameState.uiText,
         updateUiText: gameState.updateUiText,
-        isMockMode: gameState.isMockMode,
-        setIsMockMode: gameState.setIsMockMode,
 
         // Debug Helpers (Exposed for DebugMenu)
         setStats: gameState.setStats,

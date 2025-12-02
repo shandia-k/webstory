@@ -3,10 +3,15 @@ import { Swords, Shield, Zap, Crosshair, Box, Cpu, Dices } from 'lucide-react';
 
 export function ActionCard({ card, onClick, disabled }) {
     // Determine Icon & Color based on Type
+    // Determine Icon & Color based on Type
     let Icon = Crosshair;
     let colorTheme = 'cyan';
 
-    if (card.type === 'skill_check') {
+    // 1. Handle 'loot' type
+    if (card.type === 'loot') {
+        Icon = Box;
+        colorTheme = 'emerald';
+    } else if (card.type === 'skill_check') {
         Icon = Cpu;
         colorTheme = 'cyan';
     } else if (card.type === 'dice') {
@@ -24,6 +29,21 @@ export function ActionCard({ card, onClick, disabled }) {
     } else if (card.type === 'attack') {
         Icon = Swords;
         colorTheme = 'red';
+    }
+
+    // 2. Override Icon if card.icon is provided
+    // If card.icon is a React Element (already instantiated), we'll handle it in render
+    // If it's a component reference, we override Icon
+    let CustomIconElement = null;
+    if (card.icon) {
+        if (React.isValidElement(card.icon)) {
+            CustomIconElement = card.icon;
+        } else {
+            // It's a component or string, try to use it
+            // But for safety in this project structure, we usually pass Elements or Lucide components
+            // If it's a string (emoji), we might need special handling, but usually it's an element in this codebase
+            CustomIconElement = <span className="text-xl">{card.icon}</span>;
+        }
     }
 
     const colors = {
@@ -56,7 +76,7 @@ export function ActionCard({ card, onClick, disabled }) {
         >
             {/* Top-Right: Action Type */}
             <div className="absolute top-2 right-2 flex flex-col items-end">
-                <Icon size={20} />
+                {CustomIconElement ? CustomIconElement : <Icon size={20} />}
                 <span className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-1">{card.type}</span>
             </div>
 
@@ -80,7 +100,7 @@ export function ActionCard({ card, onClick, disabled }) {
 
                 {/* Under Center: Description */}
                 <p className="text-[10px] opacity-70 font-mono leading-tight line-clamp-3">
-                    {card.description || card.action}
+                    {card.description || card.name}
                 </p>
             </div>
 

@@ -25,9 +25,16 @@ export function useGameState() {
         { name: "Stimpack", count: 3, tags: ["consumable", "heal"], type: "consumable", icon: "💉" },
         { name: "Encrypted Datapad", count: 1, tags: ["intel", "encrypted"], type: "intel", icon: "💾" }
     ]));
+    const [statDefinitions, setStatDefinitions] = useState(() => loadState('statDefinitions', {})); // Metadata for stats (icon, color, category)
 
     const [quest, setQuest] = useState(() => loadState('quest', UI_TEXT.CONTENT.QUEST_DEFAULT));
-    const [genre, setGenre] = useState(() => loadState('genre', UI_TEXT.FIXED.GENRE_DEFAULT));
+
+    // --- REFACTOR: Split Genre into GameMode and Theme ---
+    // gameMode: 'rpg' | 'chatbot'
+    // theme: 'scifi' | 'horror' | 'romance' | 'fantasy' | 'slice_of_life' | 'isekai' | 'mythology' | 'wild_west' | 'dark' | 'comedy' | 'world_war' | 'surreal'
+    const [gameMode, setGameMode] = useState(() => loadState('gameMode', null));
+    const [theme, setTheme] = useState(() => loadState('theme', 'scifi')); // Default theme
+
     const [environment, setEnvironment] = useState(() => loadState('environment', null)); // Dynamic Background
     const [lastOutcome, setLastOutcome] = useState(null);
     const [gameOver, setGameOver] = useState(() => loadState('gameOver', false));
@@ -56,10 +63,25 @@ export function useGameState() {
 
     const [choices, setChoices] = useState([]); // Dynamic Action Choices
 
+    // --- RPG Specific State (Centralized) ---
+    const [rpgState, setRpgState] = useState(() => loadState('rpgState', {
+        roomRegistry: {},
+        currentRoomId: 'entrance',
+        visitedIds: [], // Will be converted to Set in controller
+        combatState: {
+            inCombat: false,
+            playerHp: 100,
+            playerStats: { health: 100, energy: 100 },
+            enemyHp: 0,
+            enemyName: ""
+        },
+        currentInteractables: [],
+        lastRawResponse: null
+    }));
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_api_key') || '');
     const [language, setLanguage] = useState(() => localStorage.getItem('nexus_language') || 'English');
-    const [isMockMode, setIsMockMode] = useState(() => localStorage.getItem('nexus_mock_mode') === 'true');
 
     // Advanced Interactions State
     const [qteActive, setQteActive] = useState(false);
@@ -141,9 +163,11 @@ export function useGameState() {
 
     return {
         stats, setStats,
+        statDefinitions, setStatDefinitions,
         inventory, setInventory,
         quest, setQuest,
-        genre, setGenre,
+        gameMode, setGameMode,
+        theme, setTheme,
         environment, setEnvironment,
         lastOutcome, setLastOutcome,
         gameOver, setGameOver,
@@ -153,11 +177,12 @@ export function useGameState() {
         playerRole, setPlayerRole,
         setupData, setSetupData,
         initialCharacterData, setInitialCharacterData,
+        initialCharacterData, setInitialCharacterData,
         choices, setChoices,
+        rpgState, setRpgState,
         isProcessing, setIsProcessing,
         apiKey, setApiKey,
         language, setLanguage,
-        isMockMode, setIsMockMode,
         qteActive, setQteActive,
         feedback, setFeedback,
         allowCombo, setAllowCombo,

@@ -6,7 +6,7 @@ import { NameSection } from './NameSection';
 import { RoleSelector } from './RoleSelector';
 import { RoleDetails } from './RoleDetails';
 
-export function CharacterCreation({ genre, onComplete, onBack, isTestMode }) {
+export function CharacterCreation({ genre, theme, onComplete, onBack }) {
     const { apiKey, language, setupData, setSetupData, uiText } = useGame();
 
     const [loading, setLoading] = useState(!setupData);
@@ -22,25 +22,32 @@ export function CharacterCreation({ genre, onComplete, onBack, isTestMode }) {
             return;
         }
 
-        const fetchSetup = async () => {
-            try {
-                setLoading(true);
-                const data = await generateGameSetup(apiKey, genre, language);
-                setSetupData(data);
-                // Auto-set a random name initially
-                if (data.suggested_names?.length > 0) {
-                    setName(data.suggested_names[Math.floor(Math.random() * data.suggested_names.length)]);
+        const timer = setTimeout(() => {
+            const fetchSetup = async () => {
+                try {
+                    setLoading(true);
+                    // Pass theme along with genre (which is actually gameMode)
+                    // We combine them for the prompt context: "RPG (Fantasy)"
+                    const context = `${genre} (${theme})`;
+                    const data = await generateGameSetup(apiKey, context, language);
+                    setSetupData(data);
+                    // Auto-set a random name initially
+                    if (data.suggested_names?.length > 0) {
+                        setName(data.suggested_names[Math.floor(Math.random() * data.suggested_names.length)]);
+                    }
+                } catch (err) {
+                    console.error("Setup Error:", err);
+                    setError(err.message || uiText.UI.CHARACTER_CREATION.ERROR_DEFAULT);
+                } finally {
+                    setLoading(false);
                 }
-            } catch (err) {
-                console.error("Setup Error:", err);
-                setError(err.message || uiText.UI.CHARACTER_CREATION.ERROR_DEFAULT);
-            } finally {
-                setLoading(false);
-            }
-        };
+            };
 
-        fetchSetup();
-    }, [apiKey, genre, language, setupData, setSetupData]);
+            fetchSetup();
+        }, 50); // Debounce to prevent double-call in StrictMode
+
+        return () => clearTimeout(timer);
+    }, [apiKey, genre, theme, language, setupData, setSetupData]);
 
     const handleRandomizeName = () => {
         if (setupData?.suggested_names) {
@@ -134,7 +141,7 @@ export function CharacterCreation({ genre, onComplete, onBack, isTestMode }) {
                         includeItems={includeItems}
                         name={name}
                         handleConfirm={handleConfirm}
-                        confirmButtonText={isTestMode ? "INITIATE TEST" : uiText.UI.CHARACTER_CREATION.BTN_INITIATE}
+                        confirmButtonText={uiText.UI.CHARACTER_CREATION.BTN_INITIATE}
                     />
 
                 </div>

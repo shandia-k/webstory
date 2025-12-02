@@ -32,39 +32,6 @@
   --color-border: #27272a;
 }
 
-/* Theme Overrides */
-[data-theme='scifi'] {
-  --color-bg-main: #09090b;
-  --color-bg-panel: #18181b;
-  --color-text-main: #d4d4d8;
-  --color-text-muted: #71717a;
-  --color-accent: #4f46e5;
-  --color-border: #27272a;
-}
-
-[data-theme='horror'] {
-  --color-bg-main: #0a0505;
-  --color-bg-panel: #1a0b0b;
-  --color-text-main: #e5e5e5;
-  --color-text-muted: #7f1d1d;
-  --color-accent: #dc2626;
-  --color-border: #450a0a;
-}
-
-[data-theme='romance'] {
-  --color-bg-main: #1f1016;
-  --color-bg-panel: #2e1a22;
-  --color-text-main: #fce7f3;
-  --color-text-muted: #be185d;
-  --color-accent: #db2777;
-  --color-border: #831843;
-}
-
-/* Utilities */
-.delay-100 {
-  animation-delay: 100ms;
-}
-
 .delay-200 {
   animation-delay: 200ms;
 }
@@ -189,30 +156,228 @@
 }
 
 /* THEME: HORROR */
+[data-theme='scifi'] {
+  --color-bg-main: #09090b;
+  --color-bg-panel: #18181b;
+  --color-text-main: #e4e4e7;
+  --color-text-muted: #a1a1aa;
+  --color-accent: #6366f1; /* Indigo-500 */
+  --color-border: #27272a;
+}
+.dice-theme-scifi .dice-face {
+  background: rgba(10, 10, 20, 0.9);
+  border: 2px solid #6366f1;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5), inset 0 0 20px rgba(99, 102, 241, 0.2);
+}
+.dice-theme-scifi .pip {
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+}
+
+/* 2. HORROR */
+[data-theme='horror'] {
+  --color-bg-main: #0f0505;
+  --color-bg-panel: #2a0a0a;
+  --color-text-main: #e5e5e5;
+  --color-text-muted: #a8a29e;
+  --color-accent: #dc2626; /* Red-600 */
+  --color-border: #450a0a;
+}
 .dice-theme-horror .dice-face {
-  background: #e3d5b8; /* Bone */
-  border: 1px solid #5c4033;
-  box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+  background: #1a0505;
+  border: 1px solid #7f1d1d;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
 }
 .dice-theme-horror .pip {
-  background: #7f1d1d; /* Blood Red */
-  box-shadow: 0 0 5px rgba(220,38,38,0.8);
+  background: #ef4444;
+  box-shadow: 0 0 5px #7f1d1d;
+  border-radius: 2px; /* Jagged look */
+}
+
+/* 3. ROMANCE */
+[data-theme='romance'] {
+  --color-bg-main: #fff1f2;
+  --color-bg-panel: #ffe4e6;
+  --color-text-main: #881337;
+  --color-text-muted: #be123c;
+  --color-accent: #f43f5e; /* Rose-500 */
+  --color-border: #fecdd3;
+}
+.dice-theme-romance .dice-face {
+  background: #fff0f5;
+  border: 2px solid #f43f5e;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+}
+.dice-theme-romance .pip {
+  background: #fb7185;
+  border-radius: 50%;
+  box-shadow: 0 0 2px #f43f5e;
+}
+
+/* 4. FANTASY */
+[data-theme='fantasy'] {
+  --color-bg-main: #052e16;
+  --color-bg-panel: #064e3b;
+  --color-text-main: #ecfccb;
+  --color-text-muted: #a3e635;
+  --color-accent: #fbbf24; /* Amber-400 */
+  --color-border: #14532d;
+}
+.dice-theme-fantasy .dice-face {
+  background: #064e3b;
+  border: 2px solid #fbbf24;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+}
+.dice-theme-fantasy .pip {
+  background: #fbbf24;
+  box-shadow: 0 0 5px #d97706;
+}
+
+/* 5. SLICE OF LIFE */
+[data-theme='slice_of_life'] {
+  --color-bg-main: #fffbeb;
+  --color-bg-panel: #fef3c7;
+  --color-text-main: #78350f;
+  --color-text-muted: #b45309;
+  --color-accent: #f59e0b; /* Amber-500 */
+  --color-border: #fde68a;
+}
+.dice-theme-slice_of_life .dice-face {
+  background: #fff8dc;
+  border: 2px solid #f59e0b;
+}
+.dice-theme-slice_of_life .pip {
+  background: #d97706;
+}
+
+/* 6. ISEKAI */
+[data-theme='isekai'] {
+  --color-bg-main: #1e1b4b;
+  --color-bg-panel: #312e81;
+  --color-text-main: #e0e7ff;
+  --color-text-muted: #818cf8;
+  --color-accent: #8b5cf6; /* Violet-500 */
+  --color-border: #4338ca;
+}
+.dice-theme-isekai .dice-face {
+  background: #312e81;
+  border: 2px solid #8b5cf6;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+.dice-theme-isekai .pip {
+  background: #c4b5fd;
+  box-shadow: 0 0 8px #8b5cf6;
+}
+
+/* 7. MYTHOLOGY */
+[data-theme='mythology'] {
+  --color-bg-main: #271a0c; /* Dark Bronze */
+  --color-bg-panel: #451a03;
+  --color-text-main: #fef3c7;
+  --color-text-muted: #d97706;
+  --color-accent: #fcd34d; /* Amber-300 */
+  --color-border: #78350f;
+}
+.dice-theme-mythology .dice-face {
+  background: #451a03;
+  border: 2px solid #fcd34d;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+}
+.dice-theme-mythology .pip {
+  background: #fffbeb;
+  box-shadow: 0 0 5px #fcd34d;
+}
+
+/* 8. WILD WEST */
+[data-theme='wild_west'] {
+  --color-bg-main: #291d16; /* Leather */
+  --color-bg-panel: #431407;
+  --color-text-main: #ffedd5;
+  --color-text-muted: #fdba74;
+  --color-accent: #ea580c; /* Orange-600 */
+  --color-border: #7c2d12;
+}
+.dice-theme-wild_west .dice-face {
+  background: #3f2e26;
+  border: 2px dashed #ea580c;
+}
+.dice-theme-wild_west .pip {
+  background: #fed7aa;
+}
+
+/* 9. DARK */
+[data-theme='dark'] {
+  --color-bg-main: #000000;
+  --color-bg-panel: #171717;
+  --color-text-main: #d4d4d4;
+  --color-text-muted: #525252;
+  --color-accent: #ffffff; /* White */
+  --color-border: #262626;
+}
+.dice-theme-dark .dice-face {
+  background: #171717;
+  border: 1px solid #525252;
+}
+.dice-theme-dark .pip {
+  background: #ffffff;
+}
+
+/* 10. COMEDY */
+[data-theme='comedy'] {
+  --color-bg-main: #fdf2f8;
+  --color-bg-panel: #fce7f3;
+  --color-text-main: #db2777;
+  --color-text-muted: #ec4899;
+  --color-accent: #facc15; /* Yellow-400 */
+  --color-border: #fbcfe8;
+}
+.dice-theme-comedy .dice-face {
+  background: #fce7f3;
+  border: 3px solid #facc15;
+}
+.dice-theme-comedy .pip {
+  background: #db2777;
   border-radius: 50%;
 }
 
-/* THEME: FANTASY (Romance/Default fallback) */
-.dice-theme-fantasy .dice-face {
-  background: #271c19; /* Dark Wood */
-  border: 2px solid #d4af37; /* Gold */
+/* 11. WORLD WAR */
+[data-theme='world_war'] {
+  --color-bg-main: #1c1917;
+  --color-bg-panel: #292524;
+  --color-text-main: #a8a29e;
+  --color-text-muted: #57534e;
+  --color-accent: #65a30d; /* Lime-600 */
+  --color-border: #44403c;
 }
-.dice-theme-fantasy .pip {
-  background: #d4af37; /* Gold */
-  box-shadow: 0 0 4px #d4af37;
-  transform: rotate(45deg); /* Diamond pips */
-  border-radius: 2px;
+.dice-theme-world_war .dice-face {
+  background: #292524;
+  border: 2px solid #65a30d;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+.dice-theme-world_war .pip {
+  background: #d9f99d;
 }
 
-/* FACE TRANSFORMS */
+/* 12. SURREAL */
+[data-theme='surreal'] {
+  --color-bg-main: #2e1065;
+  --color-bg-panel: #4c1d95;
+  --color-text-main: #f0abfc;
+  --color-text-muted: #c084fc;
+  --color-accent: #e879f9; /* Fuchsia-400 */
+  --color-border: #7e22ce;
+}
+.dice-theme-surreal .dice-face {
+  background: #4c1d95;
+  border: 2px solid #e879f9;
+  box-shadow: 0 0 20px rgba(232, 121, 249, 0.6);
+}
+.dice-theme-surreal .pip {
+  background: #fae8ff;
+  box-shadow: 0 0 10px #e879f9;
+}
+
+/* TRANSFORMASI SISI DADU */
 .face-front  { transform: rotateY(0deg) translateZ(var(--dice-offset)); }
 .face-back   { transform: rotateY(180deg) translateZ(var(--dice-offset)); }
 .face-right  { transform: rotateY(90deg) translateZ(var(--dice-offset)); }

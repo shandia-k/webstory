@@ -2,23 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { useGame } from '../../../../context/GameContext';
 
 // Pip Patterns for D6
+// Pip Patterns for D6 (3x3 Grid Map)
 const PIP_PATTERNS = {
-    1: [4],
-    2: [0, 8],
-    3: [0, 4, 8],
-    4: [0, 2, 6, 8],
-    5: [0, 2, 4, 6, 8],
-    6: [0, 2, 3, 5, 6, 8]
+    1: [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    2: [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    3: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    4: [1, 0, 1, 0, 0, 0, 1, 0, 1],
+    5: [1, 0, 1, 0, 1, 0, 1, 0, 1],
+    6: [1, 0, 1, 1, 0, 1, 1, 0, 1],
 };
 
 const DieFace = ({ value, rotateClass }) => {
-    const pips = PIP_PATTERNS[value] || [];
+    const pattern = PIP_PATTERNS[value] || [];
     return (
         <div className={`dice-face ${rotateClass}`}>
-            <div className="grid grid-cols-3 grid-rows-3 gap-1 w-full h-full">
-                {[...Array(9)].map((_, i) => (
+            {/* Texture/Overlay Layer for Themes */}
+            <div className="absolute inset-0 rounded-xl pointer-events-none dice-texture" />
+
+            <div className="grid grid-cols-3 grid-rows-3 gap-1 w-full h-full p-2 relative z-10">
+                {pattern.map((hasPip, i) => (
                     <div key={i} className="flex justify-center items-center">
-                        {pips.includes(i) && <div className="pip w-3 h-3 md:w-4 md:h-4" />}
+                        {hasPip === 1 && <div className="pip w-3 h-3 md:w-4 md:h-4 rounded-full shadow-sm" />}
                     </div>
                 ))}
             </div>
@@ -27,16 +31,12 @@ const DieFace = ({ value, rotateClass }) => {
 };
 
 export function DiceLoader({ outcome }) {
-    const { genre, history } = useGame();
+    const { theme, history } = useGame();
     const [rotation, setRotation] = useState({ x: 0, y: 0 });
     const [showResult, setShowResult] = useState(false);
 
-    // Theme mapping
-    const themeClass = {
-        'horror': 'dice-theme-horror',
-        'fantasy': 'dice-theme-fantasy',
-        'scifi': 'dice-theme-scifi'
-    }[genre] || 'dice-theme-scifi';
+    // Theme mapping - Direct from CSS
+    const themeClass = `dice-theme-${theme || 'scifi'}`;
 
     useEffect(() => {
         // Initial Spin
@@ -81,12 +81,12 @@ export function DiceLoader({ outcome }) {
             // To ensure smooth transition, we might need to calculate from current, 
             // but for simplicity in this "overlay" mode, we can just set a high rotation value.
 
-            setRotation({
-                x: extraSpins + target.x,
-                y: extraSpins + target.y
-            });
+            setRotation(prev => ({
+                x: prev.x + extraSpins + target.x,
+                y: prev.y + extraSpins + target.y
+            }));
 
-            setTimeout(() => setShowResult(true), 800);
+            setTimeout(() => setShowResult(true), 2500); // Wait for animation to finish
         }
 
         return () => clearInterval(spinInterval);

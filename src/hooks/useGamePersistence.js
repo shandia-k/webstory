@@ -5,9 +5,12 @@ import { saveGameToFile, parseSaveFile } from '../utils/fileHandler';
 export function useGamePersistence(state, STORAGE_KEY) {
     const {
         stats, setStats,
+        statDefinitions, setStatDefinitions,
         inventory, setInventory,
         quest, setQuest,
-        genre, setGenre,
+        gameMode, setGameMode,
+        theme, setTheme,
+        rpgState, setRpgState,
         gameOver, setGameOver,
         history, setHistory,
         summary, setSummary
@@ -18,15 +21,18 @@ export function useGamePersistence(state, STORAGE_KEY) {
     useEffect(() => {
         const stateToSave = {
             stats,
+            statDefinitions,
             inventory,
             quest,
-            genre,
+            gameMode,
+            theme,
+            rpgState,
             gameOver,
             history,
             summary
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    }, [stats, inventory, quest, genre, gameOver, history, summary, STORAGE_KEY]);
+    }, [stats, statDefinitions, inventory, quest, gameMode, theme, rpgState, gameOver, history, summary, STORAGE_KEY]);
 
     // --- SAVE/LOAD SYSTEM ---
     const exportSave = useCallback(() => {
@@ -35,16 +41,19 @@ export function useGamePersistence(state, STORAGE_KEY) {
 
         return {
             stats,
+            statDefinitions,
             inventory,
             quest,
-            genre,
+            gameMode,
+            theme,
+            rpgState,
             gameOver,
             history: truncatedHistory,
             summary,
             timestamp: Date.now(),
             version: UI_TEXT.FIXED.APP_VERSION
         };
-    }, [stats, inventory, quest, genre, gameOver, history, summary]);
+    }, [stats, statDefinitions, inventory, quest, gameMode, theme, rpgState, gameOver, history, summary]);
 
     const importSave = useCallback((data) => {
         if (!data || !data.stats || !data.inventory) {
@@ -54,9 +63,12 @@ export function useGamePersistence(state, STORAGE_KEY) {
 
         try {
             setStats(data.stats);
+            if (data.statDefinitions && setStatDefinitions) setStatDefinitions(data.statDefinitions);
             setInventory(data.inventory);
             setQuest(data.quest || UI_TEXT.UI.ERRORS.UNKNOWN_MISSION);
-            setGenre(data.genre || UI_TEXT.FIXED.GENRE_DEFAULT);
+            setGameMode(data.gameMode || 'rpg');
+            setTheme(data.theme || 'scifi');
+            if (data.rpgState) setRpgState(data.rpgState);
             setGameOver(data.gameOver || false);
             setHistory(prev => [
                 ...(data.history || []),
@@ -77,7 +89,7 @@ export function useGamePersistence(state, STORAGE_KEY) {
             console.error(UI_TEXT.UI.ERRORS.IMPORT_ERROR, e);
             return false;
         }
-    }, [setStats, setInventory, setQuest, setGenre, setGameOver, setHistory, setSummary, STORAGE_KEY]);
+    }, [setStats, setStatDefinitions, setInventory, setQuest, setGameMode, setTheme, setRpgState, setGameOver, setHistory, setSummary, STORAGE_KEY]);
 
     const saveGame = useCallback(async () => {
         try {

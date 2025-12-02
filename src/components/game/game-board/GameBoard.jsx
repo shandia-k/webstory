@@ -1,50 +1,33 @@
 import React, { useState, useRef } from 'react';
 import { useGame } from '../../../context/GameContext';
-import { Sidebar } from './sidebar/Sidebar';
-import { Header } from './header/Header';
 import { GameMenu } from './header/GameMenu';
-import { NarrativeFeed } from './narrative-feed/NarrativeFeed';
-import { InputArea } from './input-area/InputArea';
 import { BackgroundLayer } from './BackgroundLayer';
 import { ParticleLayer } from './ParticleLayer';
 import { GameOverOverlay } from './GameOverOverlay';
 import { QTEOverlay } from './QTEOverlay';
 
-// RPG Patch Imports
-import { DungeonMap } from '../../../features/rpg/components/DungeonMap';
-import { useRPGController } from '../../../features/rpg/hooks/useRPGController.jsx';
+// Mode Imports
+import { RPGMode } from '../modes/RPGMode';
+import { StoryMode } from '../modes/StoryMode';
 
-export function GameBoard({ setGameStarted }) {
+export function GameBoard({ setGameStarted, initialData }) {
     const {
-        handleAction,
         saveGame,
         loadGame,
         lastOutcome,
         quitGame,
         resetGame,
-        genre,
+        gameMode,
+        theme,
         gameOver,
         qteActive, setQteActive,
         feedback, triggerFeedback,
-        setStats,
-        choices, inventory, // Need choices and inventory
-        allowCombo, // Need allowCombo from state
-        uiText
+        setStats
     } = useGame();
 
-    // --- RPG PATCH HOOK ---
-    // Only initialized if genre is RPG, but hooks can't be conditional.
-    // We'll initialize it always but only use it if genre === 'rpg'.
-    // In a real app, we might want to split this into a sub-component to avoid running hook logic unnecessarily.
-    // For now, the overhead is low.
-    const rpgState = useRPGController();
-    const isRPG = genre === 'rpg';
-
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [inputValue, setInputValue] = useState("");
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isGameOverVisible, setIsGameOverVisible] = useState(false);
-    const [isFocusingText, setIsFocusingText] = useState(false); // New: Track if user is reading text
     const fileInputRef = useRef(null);
 
     // Show Game Over Overlay when game ends
@@ -53,22 +36,6 @@ export function GameBoard({ setGameStarted }) {
             setIsGameOverVisible(true);
         }
     }, [gameOver]);
-
-    const handleSend = (action) => {
-        if (isRPG) {
-            rpgState.handleSend(action);
-        } else {
-            const input = typeof action === 'string' ? action : inputValue;
-            if (input.trim()) {
-                handleAction(input);
-                setInputValue("");
-            }
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') handleSend();
-    };
 
     const handleSaveGame = async () => {
         await saveGame();
@@ -107,29 +74,9 @@ export function GameBoard({ setGameStarted }) {
         overlayClass = "bg-[radial-gradient(circle_at_center,transparent_20%,rgba(220,38,38,0.6)_100%)] mix-blend-hard-light";
     }
 
-    // --- RPG STATE OVERRIDES ---
-    // If RPG, we override the props passed to global modules
-    const activeInventory = isRPG ? rpgState.inventory : inventory;
-    const activeChoices = isRPG ? rpgState.choices : choices;
-    const activeHistory = isRPG ? rpgState.feed : useGame().history; // Access history directly from context to avoid conflict
-    const activeHandleAction = isRPG ? rpgState.handleAction : handleAction;
-    const activeInputValue = isRPG ? rpgState.inputValue : inputValue;
-    const activeSetInputValue = isRPG ? rpgState.setInputValue : setInputValue;
-    const activeIsProcessing = isRPG ? rpgState.isProcessing : useGame().isProcessing;
-
-    // RPG Stats Mapping
-    const activeStats = isRPG ? {
-        health: rpgState.combatState.playerHp,
-        maxHealth: 100,
-        energy: 100, // Placeholder
-        maxEnergy: 100,
-        level: 1,
-        xp: 0,
-        maxXp: 100
-    } : useGame().stats;
-
     return (
-        <div className={`flex h-screen bg-transparent relative transition-all duration-300 ${wrapperClass}`}>
+        // Apply Theme Data Attribute
+        <div className={`flex h-screen bg-transparent relative transition-all duration-300 ${wrapperClass}`} data-theme={theme}>
             <BackgroundLayer />
             <ParticleLayer />
             {/* Feedback Overlay - Sits on top of everything */}
@@ -187,7 +134,7 @@ export function GameBoard({ setGameStarted }) {
                 onClose={() => setIsMenuOpen(false)}
                 onSave={handleSaveGame}
                 onLoad={handleLoadClick}
-                onRestart={() => resetGame(genre)}
+                onRestart={() => resetGame(gameMode, theme)}
                 onExit={() => {
                     quitGame();
                     setGameStarted(false);
@@ -202,81 +149,25 @@ export function GameBoard({ setGameStarted }) {
                 />
             )}
 
-            <Sidebar
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-                // Prop Fallback Injection
-                stats={activeStats}
-                inventory={activeInventory}
-                handleAction={activeHandleAction}
-            />
-
-            {/* --- MAIN CONTENT --- */}
-            <main
-                className="flex-1 flex flex-col min-w-0 bg-transparent relative transition-colors duration-500 z-10"
-                onClick={() => {
-                    if (gameOver && !isGameOverVisible) {
-                        setIsGameOverVisible(true);
-                    }
-                }}
-            >
-
-                <Header
+            {/* --- MODE RENDERER --- */}
+            {gameMode === 'rpg' ? (
+                <RPGMode
+                    setGameStarted={setGameStarted}
                     isSidebarOpen={isSidebarOpen}
                     setIsSidebarOpen={setIsSidebarOpen}
                     isMenuOpen={isMenuOpen}
                     setIsMenuOpen={setIsMenuOpen}
-                    quest={isRPG ? `RPG // ${rpgState.currentRoom?.name?.toUpperCase() || "UNKNOWN"}` : undefined}
+                    initialData={initialData}
                 />
-
-                {/* Content Area */}
-                <div className="flex-1 min-h-0 relative flex flex-col">
-
-                    {/* RPG LAYOUT: Split View (Map + Feed) */}
-                    {isRPG ? (
-                        <div className="flex-1 min-h-0 flex relative">
-                            {/* Col 1: Tactical Map (Left, 2/3) */}
-                            <div className="w-2/3 relative border-r border-slate-700/50 bg-slate-900/20 backdrop-blur-sm">
-                                <DungeonMap
-                                    rooms={rpgState.useRealAI ? rpgState.roomRegistry : rpgState.gameData.rooms}
-                                    currentRoomId={rpgState.currentRoomId}
-                                    visitedIds={rpgState.useRealAI ? rpgState.visitedIds : new Set([rpgState.currentRoomId])}
-                                />
-                            </div>
-
-                            {/* Col 2: Feed (Right, 1/3) */}
-                            <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
-                                <NarrativeFeed
-                                    history={activeHistory}
-                                    isProcessing={activeIsProcessing}
-                                    uiText={{ UI: { FEED: { TYPING: "Dungeon Master thinking..." } } }}
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        /* STANDARD LAYOUT: Full Feed */
-                        <div
-                            className="flex-1 min-h-0 flex flex-col"
-                            onMouseEnter={() => setIsFocusingText(true)}
-                            onMouseLeave={() => setIsFocusingText(false)}
-                        >
-                            <NarrativeFeed handleSend={handleSend} />
-                        </div>
-                    )}
-                </div>
-
-                {/* UNIFIED INPUT AREA */}
-                <InputArea
-                    inputValue={activeInputValue}
-                    setInputValue={activeSetInputValue}
-                    handleSend={handleSend}
-                    choices={activeChoices}
-                    inventory={activeInventory}
-                    handleAction={activeHandleAction}
-                    disabled={gameOver}
+            ) : (
+                <StoryMode
+                    setGameStarted={setGameStarted}
+                    isSidebarOpen={isSidebarOpen}
+                    setIsSidebarOpen={setIsSidebarOpen}
+                    isMenuOpen={isMenuOpen}
+                    setIsMenuOpen={setIsMenuOpen}
                 />
-
-            </main>
+            )}
         </div>
     );
 }

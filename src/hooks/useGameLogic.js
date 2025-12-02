@@ -8,7 +8,8 @@ export function useGameLogic(state, STORAGE_KEY) {
         stats, setStats,
         inventory, setInventory,
         quest, setQuest,
-        genre, setGenre,
+        gameMode, setGameMode,
+        theme, setTheme,
         environment, setEnvironment,
         gameOver, setGameOver,
         history, setHistory,
@@ -18,7 +19,6 @@ export function useGameLogic(state, STORAGE_KEY) {
         apiKey, // Get API Key from state
         language, // Get Language from state
         setChoices, // Set Choices state
-        isMockMode, // Get Mock Mode from state
         qteActive, setQteActive,
         feedback, setFeedback,
         allowCombo, setAllowCombo
@@ -126,16 +126,11 @@ export function useGameLogic(state, STORAGE_KEY) {
 
         try {
             // 2. Call Real LLM (or Fallback if Init)
-            const gameState = { stats, inventory, quest, history, summary, genre, language, isMockMode };
+            const gameState = { stats, inventory, quest, history, summary, gameMode, theme, language };
 
-            // Check for API Key if not init AND not in Mock Mode
-            if (!isInit && !apiKey && !isMockMode) {
+            // Check for API Key if not init
+            if (!isInit && !apiKey) {
                 throw new Error("API_KEY_MISSING");
-            }
-
-            // Handle Mock Delay
-            if (isMockMode && input.toLowerCase().includes('mock:delay')) {
-                await new Promise(r => setTimeout(r, 3000));
             }
 
             // --- SLASH COMMAND OVERRIDE ---
@@ -257,7 +252,7 @@ export function useGameLogic(state, STORAGE_KEY) {
                 timestamp: new Date().toLocaleTimeString()
             }]);
         }
-    }, [stats, inventory, quest, isProcessing, suspenseOutcome, gameOver, history, summary, setHistory, setIsProcessing, setLastOutcome, setStats, setInventory, setQuest, setGameOver, apiKey, genre, updateStats, updateInventory, isMockMode, language]);
+    }, [stats, inventory, quest, isProcessing, suspenseOutcome, gameOver, history, summary, setHistory, setIsProcessing, setLastOutcome, setStats, setInventory, setQuest, setGameOver, apiKey, gameMode, theme, updateStats, updateInventory, language]);
 
     // --- INITIALIZE GAME (After Character Creation) ---
     const initializeGame = useCallback((characterData) => {
@@ -271,20 +266,26 @@ export function useGameLogic(state, STORAGE_KEY) {
         if (state.setPlayerName) state.setPlayerName(name);
         if (state.setPlayerRole) state.setPlayerRole(role.name);
 
+        // Save Stat Definitions (Vitals vs Skills)
+        if (state.setStatDefinitions && role.stat_definitions) {
+            state.setStatDefinitions(role.stat_definitions);
+        }
+
         // Save Initial Data for Restart
         if (state.setInitialCharacterData) {
             state.setInitialCharacterData(characterData);
         }
 
         // Trigger AI Initialization with Character Context
-        const initPrompt = `SYSTEM_INIT_GENRE:${genre}|NAME:${name}|ROLE:${role.name}|BIO:${role.description}`;
+        const initPrompt = `SYSTEM_INIT_GENRE:${gameMode}|THEME:${theme}|NAME:${name}|ROLE:${role.name}|BIO:${role.description}`;
         handleAction(initPrompt);
-    }, [genre, handleAction, setStats, setInventory, state]);
+    }, [gameMode, theme, handleAction, setStats, setInventory, state]);
 
     // --- RESET GAME / RESTART MISSION ---
-    const resetGame = useCallback((selectedGenre, isHardReset = false) => {
-        // If selectedGenre is an event (from onClick) or undefined, use current genre or default to 'scifi'
-        const targetGenre = (typeof selectedGenre === 'string') ? selectedGenre : (genre || 'scifi');
+    const resetGame = useCallback((newMode, newTheme, isHardReset = false) => {
+        // If newMode/newTheme are events or undefined, use current or defaults
+        const targetMode = (typeof newMode === 'string') ? newMode : (gameMode || 'rpg');
+        const targetTheme = (typeof newTheme === 'string') ? newTheme : (theme || 'scifi');
 
         // Check if we have initial character data to restart the mission properly
         // AND we are NOT doing a hard reset (New Game)
@@ -294,11 +295,24 @@ export function useGameLogic(state, STORAGE_KEY) {
             setQuest(UI_TEXT.CONTENT.QUEST_INIT);
             setHistory([]);
             setGameOver(false);
-            setGenre(targetGenre);
+            setGameMode(targetMode);
+            setTheme(targetTheme);
             setSummary(UI_TEXT.CONTENT.SUMMARY_INIT);
 
             // Re-initialize with saved character data
             initializeGame(state.initialCharacterData);
+
+            // Reset RPG State
+            if (state.setRpgState) {
+                state.setRpgState({
+                    roomRegistry: {},
+                    currentRoomId: 'entrance',
+                    visitedIds: [],
+                    combatState: { inCombat: false, playerHp: 100, playerStats: { health: 100, energy: 100 }, enemyHp: 0, enemyName: "" },
+                    currentInteractables: [],
+                    lastRawResponse: null
+                });
+            }
         } else {
             // Hard Reset (New Game)
             setStats({ health: 100, energy: 100, shield: 100 });
@@ -306,15 +320,28 @@ export function useGameLogic(state, STORAGE_KEY) {
             setQuest(UI_TEXT.CONTENT.QUEST_INIT);
             setHistory([]);
             setGameOver(false);
-            setGenre(targetGenre);
+            setGameMode(targetMode);
+            setTheme(targetTheme);
             setSummary(UI_TEXT.CONTENT.SUMMARY_INIT);
 
             // Clear Initial Data since we are starting fresh
             if (state.setInitialCharacterData) {
                 state.setInitialCharacterData(null);
             }
+
+            // Reset RPG State
+            if (state.setRpgState) {
+                state.setRpgState({
+                    roomRegistry: {},
+                    currentRoomId: 'entrance',
+                    visitedIds: [],
+                    combatState: { inCombat: false, playerHp: 100, playerStats: { health: 100, energy: 100 }, enemyHp: 0, enemyName: "" },
+                    currentInteractables: [],
+                    lastRawResponse: null
+                });
+            }
         }
-    }, [genre, setStats, setInventory, setQuest, setHistory, setGameOver, setGenre, setSummary, state.initialCharacterData, initializeGame, state]);
+    }, [gameMode, theme, setStats, setInventory, setQuest, setHistory, setGameOver, setGameMode, setTheme, setSummary, state.initialCharacterData, initializeGame, state]);
 
     // --- QUIT GAME ---
     const quitGame = useCallback(() => {
@@ -323,11 +350,12 @@ export function useGameLogic(state, STORAGE_KEY) {
         setStats({ health: 80, energy: 60, shield: 40 });
         setInventory([]);
         setQuest(UI_TEXT.CONTENT.QUEST_DEFAULT);
-        setGenre('default'); // Explicitly set to default to show GenreSelection
+        setGameMode(null); // Reset to null to show Selection
+        setTheme('scifi');
         setHistory([]);
         setGameOver(false);
         setSummary(UI_TEXT.CONTENT.SUMMARY_INIT);
-    }, [STORAGE_KEY, setStats, setInventory, setQuest, setGenre, setHistory, setGameOver, setSummary]);
+    }, [STORAGE_KEY, setStats, setInventory, setQuest, setGameMode, setTheme, setHistory, setGameOver, setSummary]);
 
     // --- HELPER: TRIGGER FEEDBACK ---
     const triggerFeedback = useCallback((msg, color = "text-blue-400") => {

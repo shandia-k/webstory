@@ -4,7 +4,7 @@ import { useGame } from '../../../../context/GameContext';
 import { CharacterStatus } from './CharacterStatus';
 import { Inventory } from './Inventory';
 
-export function Sidebar({ isSidebarOpen, setIsSidebarOpen, stats: propStats, inventory: propInventory, playerName: propPlayerName, handleAction: propHandleAction }) {
+export function Sidebar({ isSidebarOpen, setIsSidebarOpen, stats: propStats, inventory: propInventory, playerName: propPlayerName, handleAction: propHandleAction, statDefinitions: propStatDefinitions }) {
     const gameContext = useGame();
 
     // Use props if available, otherwise fallback to context
@@ -12,6 +12,7 @@ export function Sidebar({ isSidebarOpen, setIsSidebarOpen, stats: propStats, inv
     const inventory = propInventory || gameContext.inventory;
     const playerName = propPlayerName || gameContext.playerName;
     const handleAction = propHandleAction || gameContext.handleAction;
+    const statDefinitions = propStatDefinitions || gameContext.statDefinitions;
     const { uiText } = gameContext;
     return (
         <aside className={`
@@ -57,7 +58,7 @@ export function Sidebar({ isSidebarOpen, setIsSidebarOpen, stats: propStats, inv
                 </div>
 
                 {/* Stats - Dynamic */}
-                <CharacterStatus stats={stats} uiText={uiText} />
+                <CharacterStatus stats={stats} statDefinitions={statDefinitions} uiText={uiText} />
 
                 {/* Inventory - Dynamic & Clickable */}
                 <Inventory inventory={inventory} handleAction={handleAction} uiText={uiText} />

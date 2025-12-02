@@ -1,124 +1,133 @@
 import { useState, useEffect } from 'react';
 import { useGame } from '../../../context/GameContext';
-import { getMockDungeonData } from '../../../services/mockService';
-import { generateGameResponse } from '../../../services/llmService';
+import { generateGameResponse, generateSector } from '../../../services/llmService';
 import { Terminal, Wifi, Cpu, FileText, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Search, Hand, Sword, Shield, Box } from 'lucide-react';
 
 export function useRPGController(initialData = null) {
-    const { apiKey, language } = useGame();
-    const useRealAI = !!apiKey; // Auto-detect if we should use Real AI
+    const { apiKey, language, theme, gameMode, rpgState, setRpgState, inventory, setInventory } = useGame();
 
-    // --- CORE STATE ---
-    const [gameData] = useState(getMockDungeonData() || {
-        start_room: "entrance",
-        rooms: { "entrance": { name: "Error", desc: "Failed to load data.", exits: {} } }
-    });
+    // Enforce Real AI - No Mock Fallback
+    // If no API key, the LLM service will throw an error, which we catch and log.
 
     const [isProcessing, setIsProcessing] = useState(false);
-    const [currentRoomId, setCurrentRoomId] = useState(gameData?.start_room || "entrance");
-
-    // Inventory from Context or Local (We'll use local for the RPG "Patch" isolation for now, 
-    // but ideally this should sync back to context if we want persistence)
-    const [inventory, setInventory] = useState(
-        initialData?.items
-            ? initialData.items
-            : [{ name: "Medkit", count: 2 }]
-    );
-
     const [feed, setFeed] = useState([
-        { id: 1, content: "Initializing RPG Module...", role: "system", timestamp: "00:00:00" },
-        { id: 2, content: "Entering Sector 1...", role: "ai", timestamp: "00:00:01" }
+        { id: 1, content: "Initializing Neural Link...", role: "system", timestamp: "00:00:00" }
     ]);
 
     const [isInspecting, setIsInspecting] = useState(false);
     const [choices, setChoices] = useState([]);
     const [inputValue, setInputValue] = useState("");
 
-    // --- RPG SPECIFIC STATE ---
-    const [roomRegistry, setRoomRegistry] = useState({});
-    const [visitedIds, setVisitedIds] = useState(new Set());
-    const [currentInteractables, setCurrentInteractables] = useState([]);
-
-    const [combatState, setCombatState] = useState({
-        inCombat: false,
-        playerHp: initialData?.role?.stats?.health || 100,
-        enemyHp: 0,
-        enemyName: ""
-    });
-
     // Helper to add log
     const addLog = (text, role = "system") => {
         setFeed(prev => [...prev, {
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             content: text,
             role: role.toLowerCase(),
             timestamp: new Date().toLocaleTimeString()
         }]);
     };
 
+    // Helper to update RPG State
+    const updateRpgState = (updates) => {
+        setRpgState(prev => ({ ...prev, ...updates }));
+    };
+
     // --- INITIALIZATION ---
     useEffect(() => {
-        if (useRealAI) {
-            const initRealAI = async () => {
-                setIsProcessing(true);
-                setFeed([]);
-                setCurrentInteractables([]);
-                setRoomRegistry({});
-                setVisitedIds(new Set());
+        const initRealAI = async () => {
+            if (!apiKey) {
+                addLog("CRITICAL ERROR: API Key missing. Cannot initialize Live AI.", "SYSTEM");
+                return;
+            }
 
-                try {
-                    addLog("Initializing Neural Link...", "SYSTEM");
-                    addLog("Generating Sector 1...", "SYSTEM");
+            // Check if we have existing state to resume
+            // BUT ONLY if we are NOT starting a fresh game with new initialData
+            if (!initialData && rpgState.currentRoomId && rpgState.roomRegistry && rpgState.roomRegistry[rpgState.currentRoomId]) {
+                addLog("Resuming simulation...", "SYSTEM");
+                // Restore feed or context if needed?
+                // For now, we just resume the room state.
+                const currentRoom = rpgState.roomRegistry[rpgState.currentRoomId];
+                if (currentRoom.description) addLog(currentRoom.description, "AI");
+                return;
+            }
 
-                    const currentGameState = {
-                        genre: "fantasy",
-                        quest: gameData.quest_name,
-                        stats: { health: combatState.playerHp, energy: 100 },
-                        inventory: inventory,
-                        summary: "Beginning simulation.",
-                        history: [],
-                        language: language || "English",
-                        isMockMode: false
-                    };
+            setIsProcessing(true);
+            // Don't clear feed here to keep the "Initializing" message
 
-                    const { generateSector } = await import('../../../services/llmService');
-                    const sectorData = await generateSector(apiKey, currentGameState, "start_room");
-
-                    if (sectorData.rooms) {
-                        const newRegistry = {};
-                        sectorData.rooms.forEach(room => {
-                            newRegistry[room.id] = {
-                                ...room,
-                                x: room.coordinates?.x || 50,
-                                y: room.coordinates?.y || 50
-                            };
-                        });
-                        setRoomRegistry(newRegistry);
-
-                        const startId = sectorData.start_room_id || sectorData.rooms[0].id;
-                        setCurrentRoomId(startId);
-                        setVisitedIds(new Set([startId]));
-
-                        if (sectorData.narrative_intro) {
-                            addLog(sectorData.narrative_intro, "AI");
-                        }
-
-                        const startRoom = newRegistry[startId];
-                        if (startRoom && startRoom.interactables) {
-                            setCurrentInteractables(startRoom.interactables);
-                        }
-                    }
-
-                } catch (error) {
-                    addLog(`Error initializing Sector: ${error.message}`, "SYSTEM");
-                } finally {
-                    setIsProcessing(false);
+            // Initialize State if empty
+            updateRpgState({
+                currentRoomId: "entrance", // Default start
+                currentInteractables: [],
+                roomRegistry: {},
+                visitedIds: [], // We'll handle Set conversion locally or just use array
+                combatState: {
+                    inCombat: false,
+                    playerHp: initialData?.role?.stats?.health || 100,
+                    playerStats: initialData?.role?.stats || { health: 100, energy: 100 },
+                    enemyHp: 0,
+                    enemyName: ""
                 }
-            };
+            });
 
+            try {
+                addLog(`Generating Sector 1 (${theme})...`, "SYSTEM");
+
+                const currentGameState = {
+                    gameMode: gameMode || "rpg",
+                    theme: theme || "scifi",
+                    quest: "Explore the unknown",
+                    stats: rpgState.combatState?.playerStats || initialData?.role?.stats,
+                    inventory: inventory,
+                    playerName: initialData?.name || "Unknown",
+                    playerRole: initialData?.role?.name || "Survivor",
+                    playerBio: initialData?.role?.description || "",
+                    summary: "Beginning simulation.",
+                    history: [],
+                    language: language || "English"
+                };
+
+                const sectorData = await generateSector(apiKey, currentGameState, "start_room");
+
+                if (sectorData.rooms) {
+                    const newRegistry = {};
+                    sectorData.rooms.forEach(room => {
+                        newRegistry[room.id] = {
+                            ...room,
+                            x: room.coordinates?.x || 50,
+                            y: room.coordinates?.y || 50
+                        };
+                    });
+
+                    const startId = sectorData.start_room_id || sectorData.rooms[0].id;
+
+                    updateRpgState({
+                        roomRegistry: newRegistry,
+                        currentRoomId: startId,
+                        visitedIds: [startId],
+                        currentInteractables: newRegistry[startId]?.interactables || [],
+                        lastRawResponse: sectorData
+                    });
+
+                    if (sectorData.narrative_intro) {
+                        addLog(sectorData.narrative_intro, "AI");
+                    }
+                }
+
+            } catch (error) {
+                addLog(`Error initializing Sector: ${error.message}`, "SYSTEM");
+            } finally {
+                setIsProcessing(false);
+            }
+        };
+
+        const timer = setTimeout(() => {
             initRealAI();
-        }
-    }, [useRealAI]); // Run once when AI mode is confirmed
+        }, 50);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run once on mount. Do NOT add state dependencies here to avoid loops.
 
     // --- ACTIONS ---
     const handleSend = async (text) => {
@@ -127,137 +136,151 @@ export function useRPGController(initialData = null) {
         setInputValue("");
         addLog(input, "USER");
 
-        if (useRealAI) {
-            setIsProcessing(true);
-            try {
-                const currentGameState = {
-                    genre: "fantasy",
-                    quest: gameData.quest_name,
-                    stats: { health: combatState.playerHp, energy: 100 },
-                    inventory: inventory,
-                    summary: "Exploring...",
-                    history: feed,
-                    language: language || "English",
-                    isMockMode: false
-                };
+        if (!apiKey) {
+            addLog("Error: API Key missing.", "SYSTEM");
+            return;
+        }
 
-                const response = await generateGameResponse(apiKey, input, currentGameState);
-                if (response.narrative) addLog(response.narrative, "AI");
-                if (response.interactables) setCurrentInteractables(response.interactables);
+        setIsProcessing(true);
+        try {
+            const currentGameState = {
+                gameMode: gameMode || "rpg",
+                theme: theme || "scifi",
+                quest: "Explore",
+                stats: rpgState.combatState.playerStats,
+                inventory: inventory,
+                summary: "Exploring...",
+                history: feed,
+                language: language || "English"
+            };
 
-            } catch (error) {
-                addLog(`Error: ${error.message}`, "SYSTEM");
-            } finally {
-                setIsProcessing(false);
+            const response = await generateGameResponse(apiKey, input, currentGameState);
+            if (response.narrative) addLog(response.narrative, "AI");
+            if (response.interactables) {
+                updateRpgState({
+                    currentInteractables: response.interactables,
+                    lastRawResponse: response
+                });
+            } else {
+                updateRpgState({ lastRawResponse: response });
             }
-        } else {
-            setTimeout(() => addLog(`Command '${input}' not recognized (Mock Mode).`, "SYSTEM"), 500);
+
+            // Handle other response fields if needed (stat updates, etc)
+
+        } catch (error) {
+            addLog(`Error: ${error.message}`, "SYSTEM");
+        } finally {
+            setIsProcessing(false);
         }
     };
 
     const move = async (dir) => {
-        if (combatState.inCombat) {
+        if (rpgState.combatState.inCombat) {
             addLog("You cannot escape during combat!", "SYSTEM");
             return;
         }
 
-        const currentRoom = useRealAI ? roomRegistry[currentRoomId] : gameData.rooms[currentRoomId];
+        const currentRoom = rpgState.roomRegistry[rpgState.currentRoomId];
 
         if (!currentRoom) {
             addLog("Error: Current room data missing.", "SYSTEM");
             return;
         }
 
-        let targetId = null;
-        if (useRealAI) {
-            targetId = currentRoom.exits?.[dir.toLowerCase()];
-        } else {
-            targetId = currentRoom.exits?.[dir];
-        }
+        const targetId = currentRoom.exits?.[dir.toLowerCase()];
 
         if (!targetId) {
             addLog("You cannot go that way.", "SYSTEM");
             return;
         }
 
-        if (useRealAI) {
-            const targetRoom = roomRegistry[targetId];
+        const targetRoom = rpgState.roomRegistry[targetId];
 
-            if (targetRoom) {
-                setCurrentRoomId(targetId);
-                setVisitedIds(prev => new Set(prev).add(targetId));
-                setIsInspecting(false);
-                setCurrentInteractables(targetRoom.interactables || []);
-                addLog(`You move ${dir} into ${targetRoom.name}.`, "AI");
-                if (targetRoom.description) addLog(targetRoom.description, "AI");
-            } else {
-                addLog("Reaching sector boundary...", "SYSTEM");
-                setIsProcessing(true);
+        if (targetRoom) {
+            updateRpgState({
+                currentRoomId: targetId,
+                visitedIds: [...(rpgState.visitedIds || []), targetId],
+                currentInteractables: targetRoom.interactables || []
+            });
+            setIsInspecting(false);
+            addLog(`You move ${dir} into ${targetRoom.name}.`, "AI");
+            if (targetRoom.description) addLog(targetRoom.description, "AI");
+        } else {
+            addLog("Reaching sector boundary...", "SYSTEM");
+            setIsProcessing(true);
 
-                try {
-                    const { generateSector } = await import('../../../services/llmService');
-                    const currentGameState = {
-                        genre: "fantasy",
-                        quest: gameData.quest_name,
-                        stats: { health: combatState.playerHp, energy: 100 },
-                        inventory: inventory,
-                        summary: `Exploring beyond ${currentRoom.name}`,
-                        history: feed,
-                        language: language || "English",
-                        isMockMode: false
-                    };
+            try {
+                const currentGameState = {
+                    gameMode: gameMode || "rpg",
+                    theme: theme || "scifi",
+                    quest: "Explore",
+                    stats: rpgState.combatState.playerStats,
+                    inventory: inventory,
+                    summary: `Exploring beyond ${currentRoom.name}`,
+                    history: feed,
+                    language: language || "English"
+                };
 
-                    const sectorData = await generateSector(apiKey, currentGameState, targetId);
+                const sectorData = await generateSector(apiKey, currentGameState, targetId);
 
-                    if (sectorData.rooms) {
-                        setRoomRegistry(prev => {
-                            const next = { ...prev };
-                            sectorData.rooms.forEach(room => {
-                                next[room.id] = {
-                                    ...room,
-                                    x: room.coordinates?.x || 50,
-                                    y: room.coordinates?.y || 50
-                                };
-                            });
-                            return next;
-                        });
+                if (sectorData.rooms) {
+                    const newRegistry = { ...rpgState.roomRegistry };
+                    sectorData.rooms.forEach(room => {
+                        newRegistry[room.id] = {
+                            ...room,
+                            x: room.coordinates?.x || 50,
+                            y: room.coordinates?.y || 50
+                        };
+                    });
 
-                        setCurrentRoomId(targetId);
-                        setVisitedIds(prev => new Set(prev).add(targetId));
+                    const newRoom = sectorData.rooms.find(r => r.id === targetId);
 
-                        if (sectorData.narrative_intro) addLog(sectorData.narrative_intro, "AI");
+                    updateRpgState({
+                        roomRegistry: newRegistry,
+                        currentRoomId: targetId,
+                        visitedIds: [...(rpgState.visitedIds || []), targetId],
+                        currentInteractables: newRoom ? (newRoom.interactables || []) : [],
+                        lastRawResponse: sectorData
+                    });
 
-                        const newRoom = sectorData.rooms.find(r => r.id === targetId);
-                        if (newRoom) setCurrentInteractables(newRoom.interactables || []);
-                    }
-                } catch (e) {
-                    addLog("Failed to generate new sector.", "SYSTEM");
-                } finally {
-                    setIsProcessing(false);
+                    if (sectorData.narrative_intro) addLog(sectorData.narrative_intro, "AI");
                 }
+            } catch (e) {
+                addLog("Failed to generate new sector.", "SYSTEM");
+            } finally {
+                setIsProcessing(false);
             }
-            return;
         }
-
-        setCurrentRoomId(targetId);
-        setIsInspecting(false);
-        addLog(`Moving ${dir}...`, "USER");
     };
 
     const handleInteraction = (interactableId) => {
-        const object = currentInteractables.find(obj => obj.id === interactableId);
+        const object = rpgState.currentInteractables.find(obj => obj.id === interactableId);
+        console.log("Interaction Triggered:", interactableId, object);
         if (!object) return;
 
         const result = object.result;
+        console.log("Interaction Result:", result);
+
         if (result.narrative) addLog(result.narrative, "AI");
 
         if (result.items) {
+            console.log("Adding Items:", result.items);
             setInventory(prev => {
+                // Create a shallow copy of the array
                 const newInv = [...prev];
+
                 result.items.forEach(newItem => {
-                    const existing = newInv.find(i => i.name === newItem.name);
-                    if (existing) existing.count += newItem.count;
-                    else newInv.push(newItem);
+                    const existingIndex = newInv.findIndex(i => i.name === newItem.name);
+
+                    if (existingIndex >= 0) {
+                        // IMMUTABLE UPDATE: Replace the item with a new object
+                        newInv[existingIndex] = {
+                            ...newInv[existingIndex],
+                            count: newInv[existingIndex].count + newItem.count
+                        };
+                    } else {
+                        newInv.push(newItem);
+                    }
                 });
                 return newInv;
             });
@@ -265,56 +288,90 @@ export function useRPGController(initialData = null) {
         }
 
         if (result.stat_updates) {
-            setCombatState(prev => ({
-                ...prev,
-                playerHp: Math.min(100, Math.max(0, prev.playerHp + (result.stat_updates.health || 0)))
-            }));
+            const newStats = { ...rpgState.combatState.playerStats };
+            Object.entries(result.stat_updates).forEach(([key, val]) => {
+                if (newStats[key] !== undefined) {
+                    newStats[key] = Math.max(0, Math.min(100, newStats[key] + val));
+                }
+            });
+
+            updateRpgState({
+                combatState: {
+                    ...rpgState.combatState,
+                    playerStats: newStats,
+                    playerHp: newStats.health || rpgState.combatState.playerHp
+                }
+            });
         }
 
-        if (result.remove_after) {
-            setCurrentInteractables(prev => prev.filter(obj => obj.id !== interactableId));
+        // Force removal if it's a LOOT type or if items were received (and it's not explicitly set to false)
+        const shouldRemove = result.remove_after !== false && (result.remove_after || object.type === 'LOOT' || (result.items && result.items.length > 0));
+
+        if (shouldRemove) {
+            const newInteractables = rpgState.currentInteractables.filter(obj => obj.id !== interactableId);
+
+            // Update Current State
+            const updates = {
+                currentInteractables: newInteractables
+            };
+
+            // Update Registry for Persistence
+            const currentRoom = rpgState.roomRegistry[rpgState.currentRoomId];
+            if (currentRoom) {
+                updates.roomRegistry = {
+                    ...rpgState.roomRegistry,
+                    [rpgState.currentRoomId]: {
+                        ...currentRoom,
+                        interactables: newInteractables
+                    }
+                };
+            }
+
+            updateRpgState(updates);
         }
     };
 
     const inspectArea = () => {
-        if (combatState.inCombat) return;
+        if (rpgState.combatState.inCombat) return;
         setIsInspecting(true);
-        const room = useRealAI ? roomRegistry[currentRoomId] : gameData.rooms[currentRoomId];
         addLog("Inspecting area...", "USER");
-
-        if (useRealAI) {
-            addLog("You look around carefully.", "AI");
-        } else {
-            if (room.loot && !inventory.some(item => item.name === room.loot.name)) {
-                addLog(`You found something: ${room.loot.name}!`, "AI");
-            } else {
-                addLog("Nothing interesting here.", "AI");
-            }
-        }
+        addLog("You look around carefully.", "AI");
     };
 
     const handleCombatAction = (action) => {
-        if (!combatState.inCombat) return;
+        if (!rpgState.combatState.inCombat) return;
 
         if (action === 'attack') {
             const dmg = Math.floor(Math.random() * 10) + 5; // 5-15 dmg
-            const newEnemyHp = Math.max(0, combatState.enemyHp - dmg);
+            const newEnemyHp = Math.max(0, rpgState.combatState.enemyHp - dmg);
 
-            addLog(`You attacked ${combatState.enemyName} for ${dmg} damage!`, "USER");
+            addLog(`You attacked ${rpgState.combatState.enemyName} for ${dmg} damage!`, "USER");
 
             if (newEnemyHp <= 0) {
-                setCombatState(prev => ({ ...prev, inCombat: false, enemyHp: 0 }));
-                addLog(`VICTORY! ${combatState.enemyName} has been defeated.`, "SYSTEM");
+                updateRpgState({
+                    combatState: { ...rpgState.combatState, inCombat: false, enemyHp: 0 }
+                });
+                addLog(`VICTORY! ${rpgState.combatState.enemyName} has been defeated.`, "SYSTEM");
                 setIsInspecting(true);
             } else {
                 const enemyDmg = Math.floor(Math.random() * 8) + 2;
-                const newPlayerHp = Math.max(0, combatState.playerHp - enemyDmg);
+                const newStats = { ...rpgState.combatState.playerStats };
+                if (newStats.health !== undefined) {
+                    newStats.health = Math.max(0, newStats.health - enemyDmg);
+                }
 
-                setCombatState(prev => ({ ...prev, enemyHp: newEnemyHp, playerHp: newPlayerHp }));
+                updateRpgState({
+                    combatState: {
+                        ...rpgState.combatState,
+                        enemyHp: newEnemyHp,
+                        playerStats: newStats,
+                        playerHp: newStats.health || Math.max(0, rpgState.combatState.playerHp - enemyDmg)
+                    }
+                });
 
                 setTimeout(() => {
-                    addLog(`${combatState.enemyName} attacks you for ${enemyDmg} damage!`, "AI");
-                    if (newPlayerHp <= 0) {
+                    addLog(`${rpgState.combatState.enemyName} attacks you for ${enemyDmg} damage!`, "AI");
+                    if (rpgState.combatState.playerStats?.health <= 0 || rpgState.combatState.playerHp <= 0) {
                         addLog("CRITICAL FAILURE. SIMULATION TERMINATED.", "SYSTEM");
                     }
                 }, 500);
@@ -344,16 +401,16 @@ export function useRPGController(initialData = null) {
 
     // --- CHOICE GENERATION ---
     useEffect(() => {
-        const room = useRealAI ? roomRegistry[currentRoomId] : gameData?.rooms?.[currentRoomId];
+        const room = rpgState.roomRegistry[rpgState.currentRoomId];
         const newChoices = [];
 
-        if (combatState.inCombat) {
+        if (rpgState.combatState.inCombat) {
             newChoices.push({ id: 'combat_atk', label: 'ATTACK', action: 'combat_attack', icon: <Sword size={20} />, type: 'action' });
             newChoices.push({ id: 'combat_def', label: 'DEFEND', action: 'combat_defend', icon: <Shield size={20} />, type: 'action' });
             newChoices.push({ id: 'combat_item', label: 'USE ITEM', action: 'combat_item', icon: <Box size={20} />, type: 'resource' });
         } else {
             // Navigation
-            if (useRealAI && room && room.exits) {
+            if (room && room.exits) {
                 Object.entries(room.exits).forEach(([dir, data]) => {
                     newChoices.push({
                         id: `move_${dir[0].toLowerCase()}`,
@@ -363,68 +420,40 @@ export function useRPGController(initialData = null) {
                         type: data.type === 'LOCKED' ? 'skill_check' : 'action'
                     });
                 });
-            } else {
-                ['North', 'South', 'East', 'West'].forEach(dir => {
-                    newChoices.push({
-                        id: `move_${dir[0].toLowerCase()}`,
-                        label: dir.toUpperCase(),
-                        action: `move_${dir.toLowerCase()}`,
-                        icon: <ArrowUp size={20} className={dir === 'South' ? 'rotate-180' : dir === 'East' ? 'rotate-90' : dir === 'West' ? '-rotate-90' : ''} />,
-                        type: 'action'
-                    });
-                });
             }
 
             // Interactables
-            if (useRealAI && currentInteractables.length > 0) {
-                currentInteractables.forEach(obj => {
+            if (rpgState.currentInteractables && rpgState.currentInteractables.length > 0) {
+                rpgState.currentInteractables.forEach(obj => {
                     newChoices.push({
                         id: obj.id,
                         label: `${obj.action_label} ${obj.name}`.toUpperCase(),
+                        name: obj.name, // Pass name for UI fallback
                         action: `INTERACT:${obj.id}`,
                         icon: obj.icon === 'box' ? <Box size={20} /> : obj.icon === 'cpu' ? <Cpu size={20} /> : <Search size={20} />,
                         type: obj.type === 'LOOT' ? 'loot' : 'skill_check'
                     });
                 });
             }
-
-            // Mock Loot
-            if (!useRealAI && room) {
-                const enemyDefeated = !room.enemy || (room.enemy && combatState.enemyHp <= 0 && !combatState.inCombat);
-                if (enemyDefeated) {
-                    const lootAvailable = room.loot && !inventory.some(i => i.name === room.loot.name);
-                    const isLootVisible = lootAvailable && (!room.isHidden || isInspecting);
-
-                    if (isLootVisible) {
-                        newChoices.push({
-                            id: 'loot',
-                            label: `TAKE ${room.loot.name.toUpperCase()}`,
-                            action: `CLIENT_LOOT:${room.loot.name}`,
-                            icon: <Hand size={20} />,
-                            type: 'loot'
-                        });
-                    }
-                }
-                newChoices.push({ id: 'inspect', label: 'INSPECT AREA', action: 'inspect', icon: <Search size={20} />, type: 'skill_check' });
-            }
+            newChoices.push({ id: 'inspect', label: 'INSPECT AREA', action: 'inspect', icon: <Search size={20} />, type: 'skill_check' });
         }
 
         setChoices(newChoices);
-    }, [currentRoomId, isInspecting, inventory, gameData, combatState.inCombat, combatState.enemyHp, currentInteractables, useRealAI, roomRegistry]);
+    }, [rpgState.currentRoomId, isInspecting, inventory, rpgState.combatState.inCombat, rpgState.combatState.enemyHp, rpgState.currentInteractables, rpgState.roomRegistry]);
 
     return {
         // State
-        gameData,
-        roomRegistry,
-        visitedIds,
-        currentRoomId,
+        gameData: { start_room: "entrance", rooms: rpgState.roomRegistry }, // Adapt for GameBoard
+        roomRegistry: rpgState.roomRegistry,
+        visitedIds: new Set(rpgState.visitedIds),
+        currentRoomId: rpgState.currentRoomId,
         inventory,
         feed,
         choices,
         inputValue,
         isProcessing,
-        combatState,
-        useRealAI,
+        combatState: rpgState.combatState,
+        useRealAI: true,
 
         // Setters
         setInputValue,
@@ -434,6 +463,6 @@ export function useRPGController(initialData = null) {
         handleAction,
 
         // Computed
-        currentRoom: useRealAI ? roomRegistry[currentRoomId] : gameData?.rooms?.[currentRoomId]
+        currentRoom: rpgState.roomRegistry[rpgState.currentRoomId]
     };
 }
