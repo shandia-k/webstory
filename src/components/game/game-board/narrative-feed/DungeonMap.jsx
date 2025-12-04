@@ -1,10 +1,26 @@
 import React from 'react';
 
 export const DungeonMap = ({ rooms, currentRoomId, visitedIds }) => {
+    // Calculate ViewBox centered on current room
+    const currentRoom = rooms[currentRoomId];
+    let viewBox = "0 0 100 100"; // Default
+
+    if (currentRoom && currentRoom.x && currentRoom.y) {
+        // Center the view on the current room
+        // We want a 150x150 unit view for context (approx 10x10 grid nodes)
+        const viewSize = 150;
+        const minX = currentRoom.x - (viewSize / 2);
+        const minY = currentRoom.y - (viewSize / 2);
+        viewBox = `${minX} ${minY} ${viewSize} ${viewSize}`;
+    }
+
+    // Debug Logs (Temporary)
+    // console.log("Map Render:", { currentRoomId, visitedSize: visitedIds.size, roomCount: Object.keys(rooms).length });
+
     return (
         <div className="w-full h-full bg-theme-panel/90 relative overflow-hidden flex items-center justify-center">
             <div className="absolute top-4 left-4 text-[10px] text-theme-accent tracking-widest border-b border-theme-border pb-1 z-10 font-bold">TACTICAL MAP</div>
-            <svg viewBox="0 0 100 100" className="w-full h-full">
+            <svg viewBox={viewBox} className="w-full h-full transition-all duration-700 ease-in-out">
                 {/* Connections */}
                 {Object.entries(rooms).map(([id, room]) => (
                     Object.values(room.exits || {}).map(targetId => {
@@ -16,6 +32,7 @@ export const DungeonMap = ({ rooms, currentRoomId, visitedIds }) => {
                         // Check visibility of connection
                         const isStartVisited = visitedIds.has(id);
                         const isEndVisited = visitedIds.has(targetId);
+                        // Show connection if EITHER end is visited (so we can see paths to unvisited rooms)
                         const isVisible = isStartVisited || isEndVisited;
 
                         if (!isVisible) return null;
@@ -50,7 +67,7 @@ export const DungeonMap = ({ rooms, currentRoomId, visitedIds }) => {
                         circleClasses += hasEnemy ? "fill-red-500 stroke-red-900" : "fill-theme-muted stroke-theme-border";
                     } else {
                         // Unvisited (Ghost)
-                        circleClasses += "fill-transparent stroke-theme-muted/30 opacity-50";
+                        circleClasses += "fill-theme-bg stroke-theme-muted/30 opacity-70";
                     }
 
                     return (

@@ -200,6 +200,8 @@ export const generateSector = async (apiKey, gameState, startRoomId = null) => {
             generationConfig: { responseMimeType: "application/json" },
         });
 
+
+
         const prompt = `
 ${SYSTEM_PROMPT}
 
@@ -215,6 +217,20 @@ Context:
 - Current Stats: ${JSON.stringify(gameState.stats)}
 - Start Room ID: ${startRoomId || "room_1"} (This is the entry point)
 - Language: ${gameState.language || 'English'} (Generate all names and descriptions in this language)
+- **GRID SYSTEM**: 8x8 Grid (Rows 0-7, Cols 0-7).
+  - **(0,0)** is TOP-LEFT (North-West).
+  - **+x** goes EAST.
+  - **+y** goes SOUTH.
+  - **North** = y - 1
+  - **South** = y + 1
+
+${startRoomId === 'start_room' ? `
+## SPECIAL INSTRUCTION: GAME START
+This is the **VERY FIRST** sector of the game.
+1. The **Narrative Intro** must be a compelling "Hook" (e.g., waking up from cryosleep, crashing on a planet, entering the dungeon).
+2. The **Start Room** should be atmospheric and relatively safe, allowing the player to get their bearings.
+3. Establish the stakes immediately in the \`sector_goal\`.
+` : ''}
 
 ## OUTPUT FORMAT (STRICT JSON)
 Return a single JSON object with this structure:
@@ -222,11 +238,18 @@ Return a single JSON object with this structure:
   "sector_id": "sector_${Date.now()}",
   "narrative_intro": "Atmospheric description of entering this new area.",
   "start_room_id": "${startRoomId || "room_1"}",
+  "sector_goal": "Describe the main objective of this sector (e.g., 'Find the Red Keycard to unlock the Blast Door').",
+  "exit_condition": {
+      "room_id": "room_X", // The room containing the exit
+      "direction": "north", // The direction of the exit (north, south, east, west)
+      "type": "LOCKED_DOOR", // LOCKED_DOOR, BOSS, PUZZLE
+      "requires": "Red Keycard" // Item name or condition required
+  },
   "rooms": [
     {
       "id": "room_1",
       "name": "Room Name",
-      "coordinates": { "x": 50, "y": 50 }, // Start room is always center (50,50) relative to sector
+      "coordinates": { "x": 0, "y": 4 }, // Grid Coordinates (0-7). Start Room MUST be at an EDGE.
       "exits": { 
         "north": "room_2",
         "east": "room_3" 
@@ -236,9 +259,10 @@ Return a single JSON object with this structure:
          {
             "id": "obj_1",
             "name": "Crate",
-            "type": "LOOT", // LOOT, TERMINAL, EXAMINE, ENEMY
-            "icon": "📦", // Emoji icon
+            "type": "LOOT", // LOOT, TERMINAL, EXAMINE, ENEMY, LOCKED
+            "icon": "box", // Use simple keys: box, zap, shield, cpu, crosshair, swords, eye, key, lock, skull, hand, message
             "description": "A rusted supply crate.",
+            "requires": "Red Keycard", // OPTIONAL: If type is LOCKED
             "action_label": "Open",
             "result": { 
                 "narrative": "Found a medkit.", 
@@ -257,23 +281,26 @@ Return a single JSON object with this structure:
             }
          }
       ]
-    },
-    {
-      "id": "room_2",
-      "name": "Connected Room",
-      "coordinates": { "x": 50, "y": 35 }, // North = y-15, South = y+15, East = x+15, West = x-15
-      "exits": { "south": "room_1" },
-      "interactables": []
     }
   ]
 }
 
 ## RULES
-1. Ensure all rooms are reachable from the start_room.
-2. Coordinates MUST align with exits (North is Y-15, East is X+15).
-3. Include at least one "Goal" or "Key" item in this sector.
-4. "exits" values MUST be the ID of the target room.
-5. **ITEMS**: Must have \`name\`, \`count\`, \`type\`, \`icon\` (emoji), \`desc\`, \`tags\`. Optional: \`value\`/\`max_value\` for durability.
+1. **STRUCTURE**: Generate 5-8 connected rooms. All rooms must be reachable.
+2. **GRID LAYOUT**:
+   - Use an 8x8 Grid (x: 0-7, y: 0-7).
+   - **START ROOM**: Must be placed on an **EDGE** of the grid (e.g., x=0, x=7, y=0, or y=7).
+   - **EXIT ROOM**: Must be placed on a **DIFFERENT EDGE** than the start room.
+   - Rooms must connect logically (e.g., if Room A is at (0,0) and Room B is at (0,1), they connect via South/North).
+3. **EXIT LOGIC (CRITICAL)**:
+   - One room MUST be the "Exit Room".
+   - This room MUST have an exit pointing to **"SECTOR_EXIT"** (e.g., "north": "SECTOR_EXIT").
+   - This "SECTOR_EXIT" is what allows the player to leave the sector.
+   - The exit MUST be blocked by a **BOSS** (Enemy) or a **LOCKED DOOR** (Puzzle).
+   - If Locked: Place the Key/Code/Tool required to open it in a **DIFFERENT** room (not the exit room).
+   - If Boss: The exit opens only after defeating the boss.
+4. **ITEMS**: Must have \`name\`, \`count\`, \`type\`, \`icon\` (emoji), \`desc\`, \`tags\`.
+5. **CREATIVITY**: Vary the obstacles. Not just "Keys". Could be "Fuse", "Password", "Crowbar", "Data Chip".
 `;
 
         const result = await model.generateContent(prompt);

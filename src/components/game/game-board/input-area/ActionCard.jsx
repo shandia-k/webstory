@@ -1,5 +1,5 @@
 import React from 'react';
-import { Swords, Shield, Zap, Crosshair, Box, Cpu, Dices } from 'lucide-react';
+import { Swords, Shield, Zap, Crosshair, Box, Cpu, Dices, ArrowUp } from 'lucide-react';
 
 export function ActionCard({ card, onClick, disabled }) {
     // Determine Icon & Color based on Type
@@ -8,7 +8,10 @@ export function ActionCard({ card, onClick, disabled }) {
     let colorTheme = 'cyan';
 
     // 1. Handle 'loot' type
-    if (card.type === 'loot') {
+    if (card.variant === 'success') {
+        Icon = ArrowUp; // Default, will be overridden by card.icon
+        colorTheme = 'success';
+    } else if (card.type === 'loot') {
         Icon = Box;
         colorTheme = 'emerald';
     } else if (card.type === 'skill_check') {
@@ -53,7 +56,8 @@ export function ActionCard({ card, onClick, disabled }) {
         emerald: 'bg-emerald-950/80 border-emerald-500 text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]',
         blue: 'bg-blue-950/80 border-blue-500 text-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]',
         red: 'bg-red-950/80 border-red-500 text-red-400 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]',
-        slate: 'bg-slate-800 border-slate-500 text-slate-300 hover:shadow-[0_0_20px_rgba(148,163,184,0.4)]'
+        slate: 'bg-slate-800 border-slate-500 text-slate-300 hover:shadow-[0_0_20px_rgba(148,163,184,0.4)]',
+        success: 'bg-green-950/80 border-green-500 text-green-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.6)] ring-1 ring-green-400/50'
     };
 
     const themeClass = colors[colorTheme] || colors.cyan;

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../../context/GameContext';
 import { generateGameResponse, generateSector } from '../../../services/llmService';
+
+import { applyGridCoordinates, getNextSectorCoordinates } from '../../../utils/layoutGenerator';
 import { Terminal, Wifi, Cpu, FileText, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Search, Hand, Sword, Shield, Box } from 'lucide-react';
 
 export function useRPGController(initialData = null) {
@@ -33,6 +35,55 @@ export function useRPGController(initialData = null) {
         setRpgState(prev => ({ ...prev, ...updates }));
     };
 
+    // Background Generation State
+    const nextSectorData = useRef(null);
+    const isGeneratingNext = useRef(false);
+
+    // --- BACKGROUND GENERATION ---
+    const generateNextSector = async (currentRoom) => {
+        console.log(`[DEBUG] Attempting Background Gen. Generating: ${isGeneratingNext.current}, Data Ready: ${!!nextSectorData.current}`);
+
+        if (isGeneratingNext.current || nextSectorData.current) {
+            console.log("[DEBUG] Background Gen Skipped (Already in progress or data ready)");
+            return;
+        }
+
+        isGeneratingNext.current = true;
+        console.log("Background Generation Started...");
+
+        try {
+            const currentGameState = {
+                gameMode: gameMode || "rpg",
+                theme: theme || "scifi",
+                quest: "Explore deeper",
+                stats: rpgState.combatState.playerStats,
+                inventory: inventory,
+                playerName: initialData?.name || "Unknown",
+                playerRole: initialData?.role?.name || "Survivor",
+                playerBio: initialData?.role?.description || "",
+                summary: `Leaving ${currentRoom.name}`,
+                history: [], // Keep context light
+                language: language || "English"
+            };
+
+            // Generate relative to a hypothetical "next" ID
+            const sectorData = await generateSector(apiKey, currentGameState, `sector_${Date.now()}_start`);
+
+            if (sectorData.rooms) {
+                // For background gen, we don't know the exact exit yet.
+                // We defer grid positioning until the actual move.
+                nextSectorData.current = {
+                    ...sectorData
+                };
+                console.log("Background Generation Complete:", nextSectorData.current);
+            }
+        } catch (e) {
+            console.error("Background Gen Failed:", e);
+        } finally {
+            isGeneratingNext.current = false;
+        }
+    };
+
     // --- INITIALIZATION ---
     useEffect(() => {
         const initRealAI = async () => {
@@ -42,32 +93,26 @@ export function useRPGController(initialData = null) {
             }
 
             // Check if we have existing state to resume
-            // BUT ONLY if we are NOT starting a fresh game with new initialData
             if (!initialData && rpgState.currentRoomId && rpgState.roomRegistry && rpgState.roomRegistry[rpgState.currentRoomId]) {
                 addLog("Resuming simulation...", "SYSTEM");
-                // Restore feed or context if needed?
-                // For now, we just resume the room state.
                 const currentRoom = rpgState.roomRegistry[rpgState.currentRoomId];
                 if (currentRoom.description) addLog(currentRoom.description, "AI");
                 return;
             }
 
             setIsProcessing(true);
-            // Don't clear feed here to keep the "Initializing" message
 
             // Initialize State if empty
             updateRpgState({
                 currentRoomId: "entrance", // Default start
                 currentInteractables: [],
                 roomRegistry: {},
-                visitedIds: [], // We'll handle Set conversion locally or just use array
+                visitedIds: [],
                 combatState: {
-                    inCombat: false,
-                    playerHp: initialData?.role?.stats?.health || 100,
-                    playerStats: initialData?.role?.stats || { health: 100, energy: 100 },
                     enemyHp: 0,
                     enemyName: ""
-                }
+                },
+                currentSector: { x: 0, y: 0 }
             });
 
             try {
@@ -87,19 +132,30 @@ export function useRPGController(initialData = null) {
                     language: language || "English"
                 };
 
+                console.log("[Init] Calling generateSector...");
                 const sectorData = await generateSector(apiKey, currentGameState, "start_room");
+                console.log("[Init] Received sectorData:", sectorData);
 
-                if (sectorData.rooms) {
+                if (sectorData && sectorData.rooms && Array.isArray(sectorData.rooms)) {
+                    // Apply Grid Coordinates for the first sector (0,0)
+                    const adjustedRooms = applyGridCoordinates({ x: 0, y: 0 }, sectorData.rooms);
+
                     const newRegistry = {};
-                    sectorData.rooms.forEach(room => {
-                        newRegistry[room.id] = {
-                            ...room,
-                            x: room.coordinates?.x || 50,
-                            y: room.coordinates?.y || 50
-                        };
+                    adjustedRooms.forEach(room => {
+                        newRegistry[room.id] = { ...room };
                     });
 
-                    const startId = sectorData.start_room_id || sectorData.rooms[0].id;
+                    let startId = sectorData.start_room_id;
+
+                    // Validation: Ensure startId exists in the generated rooms
+                    if (!startId || !newRegistry[startId]) {
+                        console.warn(`[Init] Mismatch: start_room_id '${startId}' not found in rooms. Defaulting to first room.`);
+                        startId = adjustedRooms[0].id;
+                    }
+
+                    console.log("[Init] Final Start Room ID:", startId);
+
+
 
                     updateRpgState({
                         roomRegistry: newRegistry,
@@ -112,10 +168,27 @@ export function useRPGController(initialData = null) {
                     if (sectorData.narrative_intro) {
                         addLog(sectorData.narrative_intro, "AI");
                     }
+                } else {
+                    throw new Error("Invalid sector data received from AI");
                 }
 
             } catch (error) {
+                console.error("[Init] Error:", error);
                 addLog(`Error initializing Sector: ${error.message}`, "SYSTEM");
+                // Fallback to a basic room so the game doesn't hang
+                const fallbackId = "fallback_start";
+                const fallbackRoom = {
+                    id: fallbackId,
+                    name: "Emergency Airlock",
+                    description: "System failure detected. Emergency protocols engaged. You are in a safe zone.",
+                    x: 0, y: 0,
+                    exits: {}
+                };
+                updateRpgState({
+                    roomRegistry: { [fallbackId]: fallbackRoom },
+                    currentRoomId: fallbackId,
+                    visitedIds: [fallbackId]
+                });
             } finally {
                 setIsProcessing(false);
             }
@@ -127,7 +200,7 @@ export function useRPGController(initialData = null) {
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Run once on mount. Do NOT add state dependencies here to avoid loops.
+    }, []);
 
     // --- ACTIONS ---
     const handleSend = async (text) => {
@@ -187,65 +260,157 @@ export function useRPGController(initialData = null) {
             return;
         }
 
-        const targetId = currentRoom.exits?.[dir.toLowerCase()];
+        // --- 1. PREPARE STATE UPDATES ---
+        // We will accumulate all updates and apply them ONCE at the end to avoid race conditions.
+        let pendingRegistryUpdate = { ...rpgState.roomRegistry };
+        let pendingCurrentRoom = { ...currentRoom };
+        let unlockedThisTurn = false;
+
+        // --- 2. EXIT CONDITION CHECK ---
+        if (currentRoom.exit_condition &&
+            currentRoom.exit_condition.direction &&
+            currentRoom.exit_condition.direction.toLowerCase() === dir.toLowerCase() &&
+            !currentRoom.exit_condition.solved) {
+
+            const req = currentRoom.exit_condition.requires;
+            if (req) {
+                // Fuzzy check for item
+                const hasItem = inventory.find(i => i.name.toLowerCase().includes(req.toLowerCase()));
+
+                if (hasItem) {
+                    addLog(`Used ${hasItem.name} to unlock the way.`, "SYSTEM");
+
+                    // Mark as solved in our pending objects
+                    pendingCurrentRoom.exit_condition = { ...currentRoom.exit_condition, solved: true };
+                    pendingRegistryUpdate[rpgState.currentRoomId] = pendingCurrentRoom;
+                    unlockedThisTurn = true;
+
+                } else {
+                    addLog(`LOCKED. Requires: ${req}`, "SYSTEM");
+                    return; // Block movement
+                }
+            }
+        }
+
+        const targetId = pendingCurrentRoom.exits?.[dir.toLowerCase()];
 
         if (!targetId) {
             addLog("You cannot go that way.", "SYSTEM");
             return;
         }
 
-        const targetRoom = rpgState.roomRegistry[targetId];
+        // --- 3. DETERMINE DESTINATION ---
+        const targetRoom = pendingRegistryUpdate[targetId];
 
         if (targetRoom) {
+            // --- CASE A: NORMAL MOVEMENT (Room Exists) ---
+
+            // 1. Check for Pre-generation Trigger
+            const totalRooms = Object.keys(pendingRegistryUpdate).length;
+            // Use a Set to count unique visited including the one we are about to enter
+            const uniqueVisited = new Set([...(rpgState.visitedIds || []), targetId]).size;
+
+            console.log(`Gen Check: Total ${totalRooms}, Visited ${uniqueVisited}, Left ${totalRooms - uniqueVisited}`);
+
+            if (totalRooms - uniqueVisited <= 3) {
+                generateNextSector(targetRoom);
+            }
+
+            // 2. Apply Updates
             updateRpgState({
+                roomRegistry: pendingRegistryUpdate, // Includes unlock if happened
                 currentRoomId: targetId,
                 visitedIds: [...(rpgState.visitedIds || []), targetId],
                 currentInteractables: targetRoom.interactables || []
             });
+
             setIsInspecting(false);
             addLog(`You move ${dir} into ${targetRoom.name}.`, "AI");
             if (targetRoom.description) addLog(targetRoom.description, "AI");
+
         } else {
-            addLog("Reaching sector boundary...", "SYSTEM");
+            // --- CASE B: SECTOR BOUNDARY (New Sector) ---
+            addLog("Approaching sector boundary...", "SYSTEM");
             setIsProcessing(true);
 
             try {
-                const currentGameState = {
-                    gameMode: gameMode || "rpg",
-                    theme: theme || "scifi",
-                    quest: "Explore",
-                    stats: rpgState.combatState.playerStats,
-                    inventory: inventory,
-                    summary: `Exploring beyond ${currentRoom.name}`,
-                    history: feed,
-                    language: language || "English"
-                };
+                let sectorData;
+                const nextSectorCoords = getNextSectorCoordinates(rpgState.currentSector || { x: 0, y: 0 }, dir);
+                console.log(`[Move] New Sector Coords:`, nextSectorCoords);
 
-                const sectorData = await generateSector(apiKey, currentGameState, targetId);
+                // A. Check if Pre-generated
+                if (nextSectorData.current) {
+                    addLog("Seamlessly entering new sector...", "SYSTEM");
+                    sectorData = nextSectorData.current;
+                    nextSectorData.current = null; // Consume it
+                } else {
+                    // B. Fallback: Generate Now
+                    addLog("Generating new sector...", "SYSTEM");
+                    const currentGameState = {
+                        gameMode: gameMode || "rpg",
+                        theme: theme || "scifi",
+                        quest: "Explore",
+                        stats: rpgState.combatState.playerStats,
+                        inventory: inventory,
+                        summary: `Exploring beyond ${currentRoom.name}`,
+                        history: feed,
+                        language: language || "English"
+                    };
+
+                    const rawData = await generateSector(apiKey, currentGameState, targetId);
+                    sectorData = rawData;
+                }
 
                 if (sectorData.rooms) {
-                    const newRegistry = { ...rpgState.roomRegistry };
-                    sectorData.rooms.forEach(room => {
-                        newRegistry[room.id] = {
-                            ...room,
-                            x: room.coordinates?.x || 50,
-                            y: room.coordinates?.y || 50
-                        };
+                    // Apply Grid Coordinates
+                    const adjustedRooms = applyGridCoordinates(nextSectorCoords, sectorData.rooms);
+                    sectorData = { ...sectorData, rooms: adjustedRooms };
+
+                    // --- ID REMAPPING LOGIC ---
+                    // The LLM generates a new sector with its own internal start_room_id.
+                    // We need to ensure that the exit from the previous sector (targetId)
+                    // correctly maps to the entry point of this new sector.
+                    const generatedStartId = sectorData.start_room_id || sectorData.rooms[0].id;
+                    let finalRooms = [...sectorData.rooms];
+
+                    if (generatedStartId !== targetId) {
+                        console.log(`[Remapping] Connecting ${generatedStartId} -> ${targetId}`);
+                        const idMap = { [generatedStartId]: targetId };
+
+                        finalRooms = finalRooms.map(r => {
+                            let newId = r.id;
+                            if (idMap[r.id]) newId = idMap[r.id];
+
+                            const newExits = {};
+                            if (r.exits) {
+                                Object.entries(r.exits).forEach(([d, tid]) => {
+                                    newExits[d] = idMap[tid] || tid;
+                                });
+                            }
+                            return { ...r, id: newId, exits: newExits };
+                        });
+                    }
+
+                    finalRooms.forEach(room => {
+                        pendingRegistryUpdate[room.id] = { ...room };
                     });
 
-                    const newRoom = sectorData.rooms.find(r => r.id === targetId);
-
                     updateRpgState({
-                        roomRegistry: newRegistry,
+                        roomRegistry: pendingRegistryUpdate,
                         currentRoomId: targetId,
                         visitedIds: [...(rpgState.visitedIds || []), targetId],
-                        currentInteractables: newRoom ? (newRoom.interactables || []) : [],
-                        lastRawResponse: sectorData
+                        currentInteractables: pendingRegistryUpdate[targetId]?.interactables || [],
+                        lastRawResponse: sectorData,
+                        currentSector: nextSectorCoords // Update Sector State
                     });
 
                     if (sectorData.narrative_intro) addLog(sectorData.narrative_intro, "AI");
+
+                    // Trigger background gen for next
+                    generateNextSector({ name: "New Sector Start" });
                 }
             } catch (e) {
+                console.error(e);
                 addLog("Failed to generate new sector.", "SYSTEM");
             } finally {
                 setIsProcessing(false);
@@ -257,6 +422,36 @@ export function useRPGController(initialData = null) {
         const object = rpgState.currentInteractables.find(obj => obj.id === interactableId);
         console.log("Interaction Triggered:", interactableId, object);
         if (!object) return;
+
+        // CHECK REQUIREMENTS
+        if (object.requires) {
+            const requiredItemName = object.requires;
+            const hasItem = inventory.find(i => i.name.toLowerCase() === requiredItemName.toLowerCase());
+
+            if (!hasItem) {
+                addLog(`Locked. Requires: ${requiredItemName}`, "SYSTEM");
+                return; // Block interaction
+            }
+
+            // Item found! Use it.
+            addLog(`Used: ${requiredItemName}`, "SYSTEM");
+
+            // Optional: Consume item if it's not a permanent key (heuristic or explicit flag)
+            // For now, let's assume if it's a "consumable" type or explicitly "single_use", we remove it.
+            // Or just remove it if the user implies "terpakai" (used up).
+            // Let's check the item type from inventory.
+            if (hasItem.type === 'consumable' || hasItem.tags?.includes('CONSUME')) {
+                setInventory(prev => {
+                    const newInv = [...prev];
+                    const idx = newInv.findIndex(i => i.name === hasItem.name);
+                    if (idx >= 0) {
+                        if (newInv[idx].count > 1) newInv[idx].count--;
+                        else newInv.splice(idx, 1);
+                    }
+                    return newInv;
+                });
+            }
+        }
 
         const result = object.result;
         console.log("Interaction Result:", result);
@@ -307,26 +502,43 @@ export function useRPGController(initialData = null) {
         // Force removal if it's a LOOT type or if items were received (and it's not explicitly set to false)
         const shouldRemove = result.remove_after !== false && (result.remove_after || object.type === 'LOOT' || (result.items && result.items.length > 0));
 
+        // Prepare updates
+        const updates = {};
+        let registryUpdated = false;
+        let newRegistry = { ...rpgState.roomRegistry };
+        const currentRoom = newRegistry[rpgState.currentRoomId];
+
+        // 1. Handle Exit Unlock (Sync with Room State)
+        if (object.requires && currentRoom.exit_condition && currentRoom.exit_condition.requires === object.requires) {
+            console.log("Syncing interaction with Room Exit Condition...");
+            newRegistry[rpgState.currentRoomId] = {
+                ...currentRoom,
+                exit_condition: { ...currentRoom.exit_condition, solved: true }
+            };
+            registryUpdated = true;
+        }
+
+        // 2. Handle Interactable Removal
         if (shouldRemove) {
             const newInteractables = rpgState.currentInteractables.filter(obj => obj.id !== interactableId);
+            updates.currentInteractables = newInteractables;
 
-            // Update Current State
-            const updates = {
-                currentInteractables: newInteractables
+            // Update Registry for Persistence (Interactables)
+            // We use the potentially already updated registry from step 1
+            const roomToUpdate = newRegistry[rpgState.currentRoomId] || currentRoom;
+
+            newRegistry[rpgState.currentRoomId] = {
+                ...roomToUpdate,
+                interactables: newInteractables
             };
+            registryUpdated = true;
+        }
 
-            // Update Registry for Persistence
-            const currentRoom = rpgState.roomRegistry[rpgState.currentRoomId];
-            if (currentRoom) {
-                updates.roomRegistry = {
-                    ...rpgState.roomRegistry,
-                    [rpgState.currentRoomId]: {
-                        ...currentRoom,
-                        interactables: newInteractables
-                    }
-                };
-            }
+        if (registryUpdated) {
+            updates.roomRegistry = newRegistry;
+        }
 
+        if (Object.keys(updates).length > 0) {
             updateRpgState(updates);
         }
     };
@@ -409,32 +621,56 @@ export function useRPGController(initialData = null) {
             newChoices.push({ id: 'combat_def', label: 'DEFEND', action: 'combat_defend', icon: <Shield size={20} />, type: 'action' });
             newChoices.push({ id: 'combat_item', label: 'USE ITEM', action: 'combat_item', icon: <Box size={20} />, type: 'resource' });
         } else {
-            // Navigation
-            if (room && room.exits) {
-                Object.entries(room.exits).forEach(([dir, data]) => {
-                    newChoices.push({
-                        id: `move_${dir[0].toLowerCase()}`,
-                        label: dir.toUpperCase(),
-                        action: `move_${dir.toLowerCase()}`,
-                        icon: <ArrowUp size={20} className={dir === 'south' ? 'rotate-180' : dir === 'east' ? 'rotate-90' : dir === 'west' ? '-rotate-90' : ''} />,
-                        type: data.type === 'LOCKED' ? 'skill_check' : 'action'
-                    });
-                });
-            }
-
-            // Interactables
+            // 1. INTERACTABLES (Priority)
             if (rpgState.currentInteractables && rpgState.currentInteractables.length > 0) {
                 rpgState.currentInteractables.forEach(obj => {
                     newChoices.push({
                         id: obj.id,
-                        label: `${obj.action_label} ${obj.name}`.toUpperCase(),
-                        name: obj.name, // Pass name for UI fallback
+                        label: obj.action_label || obj.name, // Use action_label if available, else name
                         action: `INTERACT:${obj.id}`,
-                        icon: obj.icon === 'box' ? <Box size={20} /> : obj.icon === 'cpu' ? <Cpu size={20} /> : <Search size={20} />,
-                        type: obj.type === 'LOOT' ? 'loot' : 'skill_check'
+                        icon: obj.icon, // Pass string name (e.g. "box", "key") directly to ActionPanel
+                        type: obj.type?.toLowerCase() || 'action',
+                        meta: {
+                            difficulty: obj.type === 'LOCKED' ? 'HARD' : null,
+                            cost: obj.requires ? `REQ: ${obj.requires}` : null
+                        }
                     });
                 });
             }
+
+            // 2. NAVIGATION
+            if (room && room.exits) {
+                Object.entries(room.exits).forEach(([dir, data]) => {
+                    if (!data) return; // Skip invalid exits
+
+                    const isLocked = data && typeof data === 'object' && data.type === 'LOCKED';
+
+                    // Check if this specific direction is the one that was just unlocked
+                    const isUnlocked = room.exit_condition &&
+                        room.exit_condition.direction &&
+                        room.exit_condition.direction.toLowerCase() === dir.toLowerCase() &&
+                        room.exit_condition.solved;
+
+                    if (isUnlocked) {
+                        newChoices.push({
+                            id: `move_${dir[0].toLowerCase()}_unlocked`,
+                            label: `OPEN ${dir.toUpperCase()}`,
+                            action: `move_${dir.toLowerCase()}`,
+                            icon: <ArrowUp size={20} className={dir === 'south' ? 'rotate-180' : dir === 'east' ? 'rotate-90' : dir === 'west' ? '-rotate-90' : ''} />,
+                            variant: 'success'
+                        });
+                    } else {
+                        newChoices.push({
+                            id: `move_${dir[0].toLowerCase()}`,
+                            label: dir.toUpperCase(),
+                            action: `move_${dir.toLowerCase()}`,
+                            icon: <ArrowUp size={20} className={dir === 'south' ? 'rotate-180' : dir === 'east' ? 'rotate-90' : dir === 'west' ? '-rotate-90' : ''} />,
+                            type: isLocked ? 'skill_check' : 'action'
+                        });
+                    }
+                });
+            }
+
             newChoices.push({ id: 'inspect', label: 'INSPECT AREA', action: 'inspect', icon: <Search size={20} />, type: 'skill_check' });
         }
 
@@ -442,8 +678,7 @@ export function useRPGController(initialData = null) {
     }, [rpgState.currentRoomId, isInspecting, inventory, rpgState.combatState.inCombat, rpgState.combatState.enemyHp, rpgState.currentInteractables, rpgState.roomRegistry]);
 
     return {
-        // State
-        gameData: { start_room: "entrance", rooms: rpgState.roomRegistry }, // Adapt for GameBoard
+        gameData: { start_room: "entrance", rooms: rpgState.roomRegistry },
         roomRegistry: rpgState.roomRegistry,
         visitedIds: new Set(rpgState.visitedIds),
         currentRoomId: rpgState.currentRoomId,
@@ -454,15 +689,9 @@ export function useRPGController(initialData = null) {
         isProcessing,
         combatState: rpgState.combatState,
         useRealAI: true,
-
-        // Setters
         setInputValue,
-
-        // Actions
         handleSend,
         handleAction,
-
-        // Computed
         currentRoom: rpgState.roomRegistry[rpgState.currentRoomId]
     };
 }
