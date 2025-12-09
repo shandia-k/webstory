@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { generateGameResponse } from '../services/llmService';
 import { UI_TEXT } from '../constants/strings';
 import { SLASH_COMMANDS } from '../constants/slashCommands';
+import { calculateNewStats } from '../utils/gameUtils';
 
 export function useGameLogic(state, STORAGE_KEY) {
     const {
@@ -30,12 +31,7 @@ export function useGameLogic(state, STORAGE_KEY) {
     // --- HELPER: UPDATE STATS ---
     const updateStats = useCallback((updates) => {
         setStats(prev => {
-            const newStats = { ...prev };
-            Object.entries(updates).forEach(([key, val]) => {
-                if (newStats[key] !== undefined) {
-                    newStats[key] = Math.max(0, Math.min(100, newStats[key] + val));
-                }
-            });
+            const newStats = calculateNewStats(prev, updates);
 
             // Check for Death
             if (newStats.health !== undefined && newStats.health <= 0) {
