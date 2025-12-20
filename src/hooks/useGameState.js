@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
-import { UI_TEXT } from '../constants/strings';
-import { TRANSLATIONS } from '../constants/textUI';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { TRANSLATIONS, TEXT_UI as UI_TEXT } from '../constants/textUI';
+import { GAME_CONFIG } from '../config/constants';
+import { saveGameToFile, parseSaveFile } from '../utils/fileHandler';
 
-const STORAGE_KEY = 'nexus_rpg_save_v2';
+const STORAGE_KEY = GAME_CONFIG.STORAGE_KEYS.AUTOSAVE;
 
 // Helper to load initial state (lazy initialization)
 const loadState = (key, fallback) => {
@@ -19,150 +20,152 @@ const loadState = (key, fallback) => {
 };
 
 export function useGameState() {
-    const [stats, setStats] = useState(() => loadState('stats', { health: 100, energy: 100, shield: 100 }));
-    const [inventory, setInventory] = useState(() => loadState('inventory', [
-        { name: "Plasma Cutter", count: 1, tags: ["tool", "heat", "weapon"], type: "tool", icon: "🔫" },
-        { name: "Stimpack", count: 3, tags: ["consumable", "heal"], type: "consumable", icon: "💉" },
-        { name: "Encrypted Datapad", count: 1, tags: ["intel", "encrypted"], type: "intel", icon: "💾" }
-    ]));
+    // --- CORE GAME STATE (Refactored from OmniHub) ---
+    const [phase, setPhase] = useState(() => loadState('phase', 'hub')); // 'hub', 'adoption', 'game', 'adventure', 'rigging'
+    const [selectedWorld, setSelectedWorld] = useState(() => loadState('selectedWorld', 'scifi'));
+    const [adoptedPal, setAdoptedPal] = useState(() => loadState('adoptedPal', null));
+    const [wallet, setWallet] = useState(() => loadState('wallet', GAME_CONFIG.INITIAL_WALLET));
+
+    // --- LEGACY / SPECIFIC STATE ---
+    const [stats, setStats] = useState(() => loadState('stats', GAME_CONFIG.INITIAL_STATS));
+    const [inventory, setInventory] = useState(() => loadState('inventory', [])); // Enhanced wallet/inventory separation later
 
     const [quest, setQuest] = useState(() => loadState('quest', UI_TEXT.CONTENT.QUEST_DEFAULT));
-    const [genre, setGenre] = useState(() => loadState('genre', UI_TEXT.FIXED.GENRE_DEFAULT));
-    const [environment, setEnvironment] = useState(() => loadState('environment', null)); // Dynamic Background
-    const [lastOutcome, setLastOutcome] = useState(null);
-    const [gameOver, setGameOver] = useState(() => loadState('gameOver', false));
-    const [summary, setSummary] = useState(() => loadState('summary', UI_TEXT.CONTENT.SUMMARY_INIT));
+    const [history, setHistory] = useState(() => loadState('history', []));
 
-    const [history, setHistory] = useState(() => loadState('history', [
-        {
-            id: 1,
-            role: 'system',
-            content: UI_TEXT.CONTENT.HISTORY_SYSTEM_INIT,
-            timestamp: '00:00'
-        },
-        {
-            id: 2,
-            role: 'ai',
-            content: UI_TEXT.CONTENT.HISTORY_AI_INIT,
-            timestamp: '00:01'
-        }
-    ]));
+    const [campaign, setCampaign] = useState(() => loadState('campaign', GAME_CONFIG.INITIAL_CAMPAIGN));
 
-    // Character Creation State
-    const [playerName, setPlayerName] = useState(() => loadState('playerName', ''));
-    const [playerRole, setPlayerRole] = useState(() => loadState('playerRole', null));
-    const [setupData, setSetupData] = useState(() => loadState('setupData', null)); // Cache AI setup response
-    const [initialCharacterData, setInitialCharacterData] = useState(() => loadState('initialCharacterData', null)); // For Restart Mission
-
-    const [choices, setChoices] = useState([]); // Dynamic Action Choices
-
-    const [isProcessing, setIsProcessing] = useState(false);
+    // API & SETTINGS
     const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_api_key') || '');
     const [language, setLanguage] = useState(() => localStorage.getItem('nexus_language') || 'English');
-    const [isMockMode, setIsMockMode] = useState(() => localStorage.getItem('nexus_mock_mode') === 'true');
 
-    // Advanced Interactions State
-    const [qteActive, setQteActive] = useState(false);
-    const [feedback, setFeedback] = useState(null); // { msg: string, color: string }
-    const [allowCombo, setAllowCombo] = useState(false); // Enable Combo Mode
+    // UI & NOTIFICATIONS
+    const [notification, setNotification] = useState(null);
 
-    // Custom UI Text from LLM Translation
-    const [customUiText, setCustomUiText] = useState(() => {
+    // --- ACTIONS ---
+    const showNotification = useCallback((msg, type = 'success') => {
+        setNotification({ message: msg, type });
+        setTimeout(() => setNotification(null), 3000);
+    }, []);
+
+    // AUTO-SAVE SYSTEM (Debounced 2s)
+    useEffect(() => {
+        if (!adoptedPal) return;
+
+        const saveTimeout = setTimeout(() => {
+            console.log("Auto-Saving Game State...");
+            const stateToSave = {
+                version: GAME_CONFIG.VERSION,
+                timestamp: new Date().toISOString(),
+                phase,
+                selectedWorld,
+                adoptedPal,
+                wallet,
+                stats,
+                inventory,
+                quest,
+                history,
+                campaign
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        }, 2000); // Wait for 2 seconds of inactivity before writing to disk
+
+        return () => clearTimeout(saveTimeout);
+    }, [phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign]);
+
+    // EXPORT / IMPORT
+    const saveGame = async () => {
         try {
-            const saved = localStorage.getItem('nexus_ui_custom');
-            return saved ? JSON.parse(saved) : null;
+            const data = {
+                version: GAME_CONFIG.VERSION,
+                timestamp: new Date().toISOString(),
+                phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign
+            };
+            await saveGameToFile(data, `omnihub_save_${new Date().getTime()}.json`);
+            showNotification('Game Saved Successfully!');
         } catch (e) {
-            return null;
+            console.error("Save Failed", e);
+            showNotification('Save Failed', 'error');
         }
-    });
-
-    const updateUiText = (lang, data, merge = false) => {
-        setCustomUiText(prev => {
-            let newData = data;
-            if (merge && prev && prev.language === lang) {
-                newData = { ...prev.data, ...data };
-            }
-            const newCustom = { language: lang, data: newData };
-            localStorage.setItem('nexus_ui_custom', JSON.stringify(newCustom));
-            return newCustom;
-        });
     };
 
-    // Helper for Deep Merge (Hardened & Type-Safe)
-    const deepMerge = (target, source) => {
-        const output = { ...target };
-        if (source && typeof source === 'object' && !Array.isArray(source)) {
-            Object.keys(source).forEach(key => {
-                const sourceValue = source[key];
-                const targetValue = target[key];
-
-                const isSourceObj = sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue);
-                const isTargetObj = targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue);
-
-                if (isTargetObj) {
-                    // Target is object. Only merge if source is also object.
-                    if (isSourceObj) {
-                        output[key] = deepMerge(targetValue, sourceValue);
-                    }
-                    // If source is not object (e.g. string/null), IGNORE it. Keep target structure.
-                } else {
-                    // Target is primitive. Overwrite if source is valid.
-                    if (sourceValue !== undefined && sourceValue !== null) {
-                        Object.assign(output, { [key]: sourceValue });
-                    }
-                }
-            });
-        }
-        return output;
-    };
-
-    const uiText = useMemo(() => {
+    const loadGame = async (file) => {
         try {
-            // 1. Check if we have custom translation for current language
-            if (customUiText && customUiText.language.toLowerCase() === language.toLowerCase()) {
-                // Deep merge to ensure no keys are lost
-                return {
-                    ...UI_TEXT,
-                    UI: deepMerge(UI_TEXT.UI, customUiText.data)
-                };
+            const data = await parseSaveFile(file);
+            if (data.version && data.version.startsWith('OmniHub')) {
+                setPhase(data.phase || 'game');
+                setSelectedWorld(data.selectedWorld || 'scifi');
+                setAdoptedPal(data.adoptedPal);
+                setWallet(data.wallet || GAME_CONFIG.INITIAL_WALLET);
+                if (data.inventory) setInventory(data.inventory);
+                if (data.stats) setStats(data.stats);
+                if (data.history) setHistory(data.history);
+                if (data.campaign) setCampaign(data.campaign);
+
+                showNotification(`Loaded save for ${data.adoptedPal?.name || 'Unknown'}`);
+            } else {
+                showNotification('Invalid Save File', 'error');
             }
-        } catch (err) {
-            console.error("Error merging UI text, falling back to English:", err);
-            // Fallback will happen below
+        } catch (e) {
+            console.error("Load Failed", e);
+            showNotification('Load Failed', 'error');
+        }
+    };
+
+    // DYNAMIC TRANSLATIONS
+    const [customTranslations, setCustomTranslations] = useState({});
+
+    const updateUiText = useCallback((lang, data) => {
+        setCustomTranslations(prev => ({
+            ...prev,
+            [lang]: data
+        }));
+    }, []);
+
+    // UI TEXT LOGIC (Simplified)
+    const uiText = useMemo(() => {
+        const langLower = language.toLowerCase();
+
+        // 1. Check Custom Translations
+        const customLangKey = Object.keys(customTranslations).find(k => k.toLowerCase() === langLower);
+        if (customLangKey) {
+            return {
+                ...UI_TEXT,
+                ...customTranslations[customLangKey],
+                UI: customTranslations[customLangKey]
+            };
         }
 
-        // 2. Fallback to hardcoded translations
-        const langKey = Object.keys(TRANSLATIONS).find(k => k.toLowerCase() === language.toLowerCase()) || 'English';
+        // 2. Check Static Translations
+        const langKey = Object.keys(TRANSLATIONS).find(k => k.toLowerCase() === langLower) || 'English';
         return {
-            ...UI_TEXT, // Keep FIXED and CONTENT
-            UI: TRANSLATIONS[langKey] // Override UI
+            ...UI_TEXT,
+            ...TRANSLATIONS[langKey],
+            UI: TRANSLATIONS[langKey]
         };
-    }, [language, customUiText]);
+    }, [language, customTranslations]);
 
     return {
+        // State
+        phase, setPhase,
+        selectedWorld, setSelectedWorld,
+        adoptedPal, setAdoptedPal,
+        wallet, setWallet,
         stats, setStats,
         inventory, setInventory,
         quest, setQuest,
-        genre, setGenre,
-        environment, setEnvironment,
-        lastOutcome, setLastOutcome,
-        gameOver, setGameOver,
-        summary, setSummary,
         history, setHistory,
-        playerName, setPlayerName,
-        playerRole, setPlayerRole,
-        setupData, setSetupData,
-        initialCharacterData, setInitialCharacterData,
-        choices, setChoices,
-        isProcessing, setIsProcessing,
+        campaign, setCampaign,
         apiKey, setApiKey,
         language, setLanguage,
-        isMockMode, setIsMockMode,
-        qteActive, setQteActive,
-        feedback, setFeedback,
-        allowCombo, setAllowCombo,
-        uiText,
+        notification, showNotification,
         updateUiText,
-        STORAGE_KEY
+        // Actions
+        saveGame,
+        loadGame,
+        // Computed
+        uiText
     };
 }
+
+

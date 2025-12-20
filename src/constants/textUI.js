@@ -1,43 +1,5 @@
 const TEXT_UI_EN = {
-    HEADER: {
-        MISSION_LABEL: "Mission",
-    },
-    SIDEBAR: {
-        PROFILE_NAME: "Operative 7",
-        STATUS_ONLINE: "Online",
-        SECTION_STATUS: "Status",
-        SECTION_INVENTORY: "Inventory",
-    },
-    MENU: {
-        SAVE_GAME: "Save Game",
-        LOAD_GAME: "Load Game",
-        RESTART_MISSION: "Restart Mission",
-        EXIT_SIMULATION: "Exit Simulation",
-        CONFIRM_RESTART_TITLE: "RESTART MISSION?",
-        CONFIRM_RESTART_MSG: "Current progress will be lost. Are you sure you want to abort this timeline?",
-        CONFIRM_EXIT_TITLE: "TERMINATE SIMULATION?",
-        CONFIRM_EXIT_MSG: "Any unsaved progress will be lost. Confirm disconnection?",
-        CONFIRM_LOAD_TITLE: "OVERWRITE TIMELINE?",
-        CONFIRM_LOAD_MSG: "Loading a new save will erase current progress. Proceed?",
-        BTN_CONFIRM: "Confirm",
-        BTN_CANCEL: "Cancel",
-    },
-    GAME_OVER: {
-        TITLE: "Signal Lost",
-        MESSAGE: "Vital signs critical. Connection terminated.",
-        BUTTON_REBOOT: "Reboot System",
-    },
-    ERRORS: {
-        SAVE_FAILED: "Failed to save game. See console for details.",
-        LOAD_INVALID: "Failed to load save file: Invalid format.",
-        LOAD_ERROR: "Error reading save file.",
-        IMPORT_INVALID: "Invalid save file format",
-        IMPORT_ERROR: "Error importing save:",
-        UNKNOWN_MISSION: "Unknown Mission",
-    },
     BUTTON_SUMMARY: "View Mission Progress",
-    INPUT_PLACEHOLDER: "What is your next move?",
-    INPUT_FOOTER: "Press Enter to send",
     TEMPLATES: {
         ACTION_INSPECT: "Inspecting {0}...",
     },
@@ -68,102 +30,77 @@ const TEXT_UI_EN = {
         DEFAULT_FAIL: "Failed to connect to Gemini API.",
         JSON_PARSE: "The system glitched. Data corruption detected. (JSON Parse Error)",
     },
-    CHARACTER_CREATION: {
-        LOADING_TITLE: "INITIALIZING SUBJECT...",
-        LOADING_SUBTITLE: "Generating neural patterns",
-        ERROR_TITLE: "INITIALIZATION FAILURE",
-        ERROR_DEFAULT: "Failed to initialize simulation parameters.",
-        BTN_ABORT: "ABORT",
-        BTN_RETRY: "RETRY SEQUENCE",
-        BTN_ABORT_FULL: "ABORT SEQUENCE",
-        TITLE: "IDENTITY CONSTRUCT",
-        LABEL_NAME: "Subject Name",
-        PLACEHOLDER_NAME: "Enter Name...",
-        TITLE_RANDOMIZE: "Randomize Name",
-        LABEL_ROLE: "Select Specialization",
-        LOADOUT_TITLE: "Standard Issue Loadout",
-        LOADOUT_DESC: "Start with role-specific equipment",
-        STATS_TITLE: "Vital Statistics",
-        EQUIPMENT_TITLE: "Equipment Manifest",
-        BTN_INITIATE: "INITIATE SIMULATION",
-    },
-    GENRE_SELECTION: {
-        TITLE: "NEXUS RPG",
-        SUBTITLE: "Initialize your neural link. Select a simulation parameter.",
-        BTN_SETTINGS: "Settings",
-        BTN_RESUME: "RESUME MISSION",
-        LABEL_ACTIVE: "SESSION ACTIVE",
-        WARNING_TITLE: "Overwrite Session?",
-        WARNING_MSG: "Starting a new simulation will erase your current progress. Are you sure?",
-        BTN_CONFIRM: "Overwrite & Start",
+    HUB: {
+        HEADER: "Where to Next?",
+        SUBHEADER: "",
+        SELECT_WORLD: "Pick a universe!",
+        BTN_RESUME: "RESUME",
+        BTN_START: "START",
         BTN_CANCEL: "Cancel",
-        STATUS_GAME_OVER: "Previous Run Ended (Game Over)",
+        NOTIFICATIONS: {
+            CONFIRM_NEW_GAME_TITLE: "Start New Game?",
+            CONFIRM_NEW_GAME: "Starting a new game will overwrite your current auto-save. Are you sure?",
+            RESUME_SUCCESS: "Game Resumed!",
+            RESUME_FAIL: "Failed to resume game",
+            SAVE_SUCCESS: "Game Saved Successfully!",
+            SAVE_FAIL: "Failed to save game",
+            LOAD_INVALID: "Invalid Save File",
+            LOAD_FAIL: "Failed to load file",
+            LOAD_SUCCESS: "Loaded: {0}"
+        }
     },
-    STATS: {
-        HEALTH: "Health",
-        ENERGY: "Energy",
-        SHIELD: "Shield",
-        SANITY: "Sanity",
-        STAMINA: "Stamina",
-        MOOD: "Mood",
-        CHARM: "Charm",
+    COMBAT: {
+        HEADER: "BATTLE MODE",
+        BTN_ATTACK: "ATTACK",
+        BTN_HEAL: "HEAL",
+        BTN_FLEE: "FLEE"
     },
-    GENRES: {
-        SCIFI: {
-            DESC: "High-tech, low-life. Neon lights and chrome.",
-        },
-        HORROR: {
-            DESC: "Ancient madness in a derelict station.",
-        },
-        ROMANCE: {
-            DESC: "Love and heartbreak in a digital age.",
-        },
+    ADVENTURE: {
+        CHAPTER: "CHAPTER",
+        CONNECTION_LOST: "CONNECTION LOST",
+        BTN_ABORT: "ABORT MISSION"
     },
-    NARRATIVE: {
-        PROCESSING: "Nexus processing...",
+    CUTE_UI: {
+        FEED: "Feed",
+        PLAY: "Play",
+        NAP: "Nap",
+        EXPLORE: "Explore",
+        STATS: {
+            HAPPY: "Happiness",
+            ENERGY: "Energy",
+            BELLY: "Belly"
+        },
+        NEW_FRIEND: "New Friend!",
+        GIVE_NAME: "Give a Name",
+        BTN_CHOOSE: "CHOOSE",
+        BTN_CONTINUE: "CONTINUE",
+        BTN_BACK: "Back to Choice",
+        BTN_ADOPT: "ADOPT",
+        STARTER_PACK: "Starter Pack",
+        READY: "is ready!",
+        LOADING: {
+            EGGS: "FINDING EGGS...",
+            CONNECTING: "Connecting to Pal-Verse..."
+        }
+    },
+    CONTENT: {
+        QUEST_INIT: "Initializing...",
+        QUEST_DEFAULT: "Neon Rain",
+        SUMMARY_INIT: "Waiting for AI response...",
+        SUMMARY_RESTORED: "Simulation restored.",
+        HISTORY_SYSTEM_INIT: "Waiting for AI response...",
+        HISTORY_AI_INIT: "Waiting for AI response...",
+        LOAD_SUCCESS_MSG: "Game loaded successfully.",
+    },
+    FIXED: {
+        APP_TITLE: "Nexus RPG",
+        APP_VERSION: "v0.0.1 • System Alpha",
+        GENRE_DEFAULT: "scifi"
     }
 };
 
 const TEXT_UI_ID = {
-    HEADER: {
-        MISSION_LABEL: "Misi",
-    },
-    SIDEBAR: {
-        PROFILE_NAME: "Operatif 7",
-        STATUS_ONLINE: "Online",
-        SECTION_STATUS: "Status",
-        SECTION_INVENTORY: "Inventaris",
-    },
-    MENU: {
-        SAVE_GAME: "Simpan Game",
-        LOAD_GAME: "Muat Game",
-        RESTART_MISSION: "Ulangi Misi",
-        EXIT_SIMULATION: "Keluar Simulasi",
-        CONFIRM_RESTART_TITLE: "ULANGI MISI?",
-        CONFIRM_RESTART_MSG: "Progres saat ini akan hilang. Yakin ingin membatalkan timeline ini?",
-        CONFIRM_EXIT_TITLE: "AKHIRI SIMULASI?",
-        CONFIRM_EXIT_MSG: "Progres yang belum disimpan akan hilang. Konfirmasi pemutusan?",
-        CONFIRM_LOAD_TITLE: "TIMPA TIMELINE?",
-        CONFIRM_LOAD_MSG: "Memuat save baru akan menghapus progres saat ini. Lanjutkan?",
-        BTN_CONFIRM: "Konfirmasi",
-        BTN_CANCEL: "Batal",
-    },
-    GAME_OVER: {
-        TITLE: "Sinyal Hilang",
-        MESSAGE: "Tanda vital kritis. Koneksi terputus.",
-        BUTTON_REBOOT: "Reboot Sistem",
-    },
-    ERRORS: {
-        SAVE_FAILED: "Gagal menyimpan game. Cek konsol untuk detail.",
-        LOAD_INVALID: "Gagal memuat file: Format tidak valid.",
-        LOAD_ERROR: "Error membaca file simpanan.",
-        IMPORT_INVALID: "Format file tidak valid",
-        IMPORT_ERROR: "Error mengimpor:",
-        UNKNOWN_MISSION: "Misi Tidak Diketahui",
-    },
     BUTTON_SUMMARY: "Lihat Progres Misi",
-    INPUT_PLACEHOLDER: "Apa langkah selanjutnya?",
-    INPUT_FOOTER: "Tekan Enter untuk kirim",
     TEMPLATES: {
         ACTION_INSPECT: "Memeriksa {0}...",
     },
@@ -194,59 +131,72 @@ const TEXT_UI_ID = {
         DEFAULT_FAIL: "Gagal terhubung ke Gemini API.",
         JSON_PARSE: "Sistem glitch. Korupsi data terdeteksi. (JSON Parse Error)",
     },
-    CHARACTER_CREATION: {
-        LOADING_TITLE: "MENGINISIALISASI SUBJEK...",
-        LOADING_SUBTITLE: "Membuat pola saraf",
-        ERROR_TITLE: "KEGAGALAN INISIALISASI",
-        ERROR_DEFAULT: "Gagal menginisialisasi parameter simulasi.",
-        BTN_ABORT: "BATALKAN",
-        BTN_RETRY: "ULANGI SEKUENS",
-        BTN_ABORT_FULL: "BATALKAN SEKUENS",
-        TITLE: "KONSTRUKSI IDENTITAS",
-        LABEL_NAME: "Nama Subjek",
-        PLACEHOLDER_NAME: "Masukkan Nama...",
-        TITLE_RANDOMIZE: "Acak Nama",
-        LABEL_ROLE: "Pilih Spesialisasi",
-        LOADOUT_TITLE: "Perlengkapan Standar",
-        LOADOUT_DESC: "Mulai dengan peralatan khusus peran",
-        STATS_TITLE: "Statistik Vital",
-        EQUIPMENT_TITLE: "Manifes Peralatan",
-        BTN_INITIATE: "MULAI SIMULASI",
-    },
-    GENRE_SELECTION: {
-        TITLE: "NEXUS RPG",
-        SUBTITLE: "Inisialisasi neural link. Pilih parameter simulasi.",
-        BTN_SETTINGS: "Pengaturan",
-        BTN_RESUME: "LANJUTKAN MISI",
-        LABEL_ACTIVE: "SESI AKTIF",
-        WARNING_TITLE: "Timpa Sesi?",
-        WARNING_MSG: "Memulai simulasi baru akan menghapus progres saat ini. Anda yakin?",
-        BTN_CONFIRM: "Timpa & Mulai",
+    HUB: {
+        HEADER: "Mau kemana?",
+        SUBHEADER: "",
+        SELECT_WORLD: "Pilih sebuah semesta!",
+        BTN_RESUME: "LANJUT",
+        BTN_START: "MULAI",
         BTN_CANCEL: "Batal",
-        STATUS_GAME_OVER: "Run Sebelumnya Berakhir (Game Over)",
+        NOTIFICATIONS: {
+            CONFIRM_NEW_GAME_TITLE: "Mulai Game Baru?",
+            CONFIRM_NEW_GAME: "Memulai game baru akan menimpa auto-save saat ini. Anda yakin?",
+            RESUME_SUCCESS: "Game Dilanjutkan!",
+            RESUME_FAIL: "Gagal melanjutkan game",
+            SAVE_SUCCESS: "Game Berhasil Disimpan!",
+            SAVE_FAIL: "Gagal menyimpan game",
+            LOAD_INVALID: "File Save Tidak Valid",
+            LOAD_FAIL: "Gagal memuat file",
+            LOAD_SUCCESS: "Dimuat: {0}"
+        }
     },
-    STATS: {
-        HEALTH: "Kesehatan",
-        ENERGY: "Energi",
-        SHIELD: "Perisai",
-        SANITY: "Kewarasan",
-        STAMINA: "Stamina",
-        MOOD: "Mood",
-        CHARM: "Pesona",
+    COMBAT: {
+        HEADER: "MODE TEMPUR",
+        BTN_ATTACK: "SERANG",
+        BTN_HEAL: "PULIH",
+        BTN_FLEE: "KABUR"
     },
-    GENRES: {
-        SCIFI: {
-            DESC: "Teknologi tinggi, hidup rendah. Lampu neon dan krom.",
-        },
-        HORROR: {
-            DESC: "Kegilaan kuno di stasiun terlantar.",
-        },
-        ROMANCE: {
-            DESC: "Cinta dan patah hati di era digital.",
-        },
+    ADVENTURE: {
+        CHAPTER: "BAB",
+        CONNECTION_LOST: "KONEKSI TERPUTUS",
+        BTN_ABORT: "BATALKAN MISI"
     },
-    NARRATIVE: {
-        PROCESSING: "Nexus memproses...",
+    CUTE_UI: {
+        FEED: "Makan",
+        PLAY: "Main",
+        NAP: "Tidur",
+        EXPLORE: "Jelajah",
+        STATS: {
+            HAPPY: "Bahagia",
+            ENERGY: "Energi",
+            BELLY: "Perut"
+        },
+        NEW_FRIEND: "Teman Baru!",
+        GIVE_NAME: "Beri Nama",
+        BTN_CHOOSE: "PILIH",
+        BTN_CONTINUE: "LANJUT",
+        BTN_BACK: "Kembali",
+        BTN_ADOPT: "ADOPSI",
+        STARTER_PACK: "Paket Awal",
+        READY: "sudah siap!",
+        LOADING: {
+            EGGS: "MENCARI TELUR...",
+            CONNECTING: "Terhubung ke Pal-Verse..."
+        }
+    },
+    CONTENT: {
+        QUEST_INIT: "Menginisialisasi...",
+        QUEST_DEFAULT: "Neon Rain",
+        SUMMARY_INIT: "Menunggu respon AI...",
+        SUMMARY_RESTORED: "Simulasi dipulihkan.",
+        HISTORY_SYSTEM_INIT: "Menunggu respon AI...",
+        HISTORY_AI_INIT: "Menunggu respon AI...",
+        LOAD_SUCCESS_MSG: "Game berhasil dimuat.",
+    },
+    FIXED: {
+        APP_TITLE: "Nexus RPG",
+        APP_VERSION: "v0.0.1 • System Alpha",
+        GENRE_DEFAULT: "scifi"
     }
 };
 

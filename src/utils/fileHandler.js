@@ -4,9 +4,9 @@
  * @param {Object} data - The game state object to save.
  * @returns {Promise<void>}
  */
-export const saveGameToFile = async (data) => {
+export const saveGameToFile = async (data, customFileName = null) => {
     const jsonString = JSON.stringify(data, null, 2);
-    const fileName = `nexus_save_${new Date().toISOString().slice(0, 10)}.json`;
+    const fileName = customFileName || `nexus_save_${new Date().toISOString().slice(0, 10)}.json`;
 
     try {
         // Try File System Access API (Modern Browsers)

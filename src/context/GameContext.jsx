@@ -1,10 +1,11 @@
 import React, { createContext, useContext } from 'react';
-import { useGameEngineV2 } from '../hooks/useGameEngineV2';
+import { useGameState } from '../hooks/useGameState';
 
 const GameContext = createContext(null);
 
 export const GameProvider = ({ children }) => {
-    const gameState = useGameEngineV2();
+    // Directly use the state hook, bypassing the legacy game engine logic
+    const gameState = useGameState();
 
     return (
         <GameContext.Provider value={gameState}>
