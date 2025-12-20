@@ -384,6 +384,53 @@ Human: ${userMessage}
 };
 
 /**
+ * Generates the "Master Plan" (Campaign Start)
+ */
+export const generateCampaignStart = async (apiKey, genre, palData, language) => {
+    if (!apiKey) throw new Error("API Key Missing");
+
+    try {
+        const prompt = `
+    ## ROLE
+    System Architect for a continuous RPG Campaign.
+    World Genre: ${genre}
+    Hero: ${palData.name} (${palData.role?.desc || 'Hero'})
+    Language: ${language}
+
+    ## TASK
+    Create a "Master Plan" for a long-form adventure.
+    
+    ## OUTPUT JSON
+    {
+        "title": "Epic Title of the Saga",
+        "main_quest": "The ultimate goal (e.g. Defeat the Void King)",
+        "antagonist": "Name of the main villain",
+        "tone": "Brief tone description",
+        "chapter": 1,
+        "history": []
+    }
+    `;
+        console.log("Generating Campaign Start...");
+        const { result, model } = await generateWithFallback(apiKey, prompt);
+        const response = await result.response;
+        const text = response.text();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error("Failed to parse Campaign JSON");
+    } catch (error) {
+        console.error("Campaign Gen Error:", error);
+        return {
+            title: "The Unknown Journey",
+            main_quest: "Explore the world and find your destiny.",
+            chapter: 1,
+            history: []
+        };
+    }
+};
+
+/**
  * Generates a mini-adventure (3-4 linked scenes) in one go.
  */
 export const generateAdventure = async (apiKey, palData, genre, language = 'English', campaignState = null) => {
