@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { TRANSLATIONS } from "../constants/textUI";
-import { sanitizeData, safeLog } from "../utils/security";
 
 
 const getUiText = (lang) => {
@@ -25,10 +24,6 @@ let FALLBACK_MODELS = [
 
 // Cache the model list promise to avoid redundant calls
 let modelListPromise = null;
-
-const getApiKey = () => {
-    return localStorage.getItem('nexus_api_key') || '';
-};
 
 const fetchAvailableModels = async (apiKey) => {
     try {
@@ -61,8 +56,7 @@ const fetchAvailableModels = async (apiKey) => {
             console.log("Fallback Models:", FALLBACK_MODELS);
         }
     } catch (e) {
-        // SECURITY: Sanitize error message as it might contain the URL with API key
-        safeLog("Model auto-discovery failed, using defaults:", e, [apiKey]);
+        console.warn("Model auto-discovery failed, using defaults:", e.message);
     }
 };
 
@@ -106,7 +100,7 @@ const generateWithFallback = async (apiKey, prompt, systemInstruction = null) =>
     try {
         return await tryModel(PRIMARY_MODEL);
     } catch (error) {
-        safeLog(`${PRIMARY_MODEL} failed:`, error, [apiKey]);
+        console.warn(`${PRIMARY_MODEL} failed:`, error.message);
 
         // Iterate through fallbacks
         if (error.message.includes("503") || error.message.includes("404") || error.message.includes("not found")) {
@@ -118,7 +112,7 @@ const generateWithFallback = async (apiKey, prompt, systemInstruction = null) =>
                     saveDebugLog("API_FALLBACK_SUCCESS", { model: fallbackModel }, prompt, fallbackModel);
                     return response;
                 } catch (fallbackError) {
-                    safeLog(`${fallbackModel} failed:`, fallbackError, [apiKey]);
+                    console.warn(`${fallbackModel} failed:`, fallbackError.message);
                     // Continue to next fallback
                 }
             }
@@ -132,10 +126,6 @@ const generateWithFallback = async (apiKey, prompt, systemInstruction = null) =>
 // Helper to save debug logs to localStorage
 const saveDebugLog = (type, data, prompt = null, model = null) => {
     try {
-        // SECURITY: Retrieve API key to ensure it's redacted from logs
-        const apiKey = getApiKey();
-        const secrets = [apiKey];
-
         const history = JSON.parse(localStorage.getItem('nexus_debug_history') || '[]');
         const now = new Date();
         const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
@@ -144,9 +134,9 @@ const saveDebugLog = (type, data, prompt = null, model = null) => {
             id: Date.now() + Math.random().toString(36).substr(2, 9),
             timestamp: timestamp,
             type: type, // 'GAME_RESPONSE', 'SECTOR_GEN', 'CHAR_SETUP'
-            prompt: sanitizeData(prompt, secrets),
+            prompt: prompt,
             model: model,
-            data: sanitizeData(data, secrets)
+            data: data
         };
 
         const updatedHistory = [newEntry, ...history].slice(0, 50); // Keep max 50 for better history
@@ -169,7 +159,6 @@ export const testApiKey = async (apiKey, language) => {
         return true;
     } catch (error) {
         console.error("API Test Error:", error);
-        // SECURITY: Redact error message
         saveDebugLog("API_ERROR", { function: "testApiKey", error: error.message });
 
         // Map error messages
