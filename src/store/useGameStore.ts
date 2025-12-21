@@ -5,9 +5,10 @@ import { createPlayerSlice, PlayerSlice } from './slices/playerSlice';
 import { createInventorySlice, InventorySlice } from './slices/inventorySlice';
 import { createGameSlice, GameSlice } from './slices/gameSlice';
 import { createCombatSlice, CombatSlice } from './slices/combatSlice';
+import { createSettingsSlice, SettingsSlice } from './slices/settingsSlice';
 
 // Combine all slices
-export interface GameStore extends PlayerSlice, InventorySlice, GameSlice, CombatSlice {}
+export interface GameStore extends PlayerSlice, InventorySlice, GameSlice, CombatSlice, SettingsSlice {}
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -16,6 +17,7 @@ export const useGameStore = create<GameStore>()(
       ...createInventorySlice(...a),
       ...createGameSlice(...a),
       ...createCombatSlice(...a),
+      ...createSettingsSlice(...a),
     })),
     {
       name: 'rpg-game-storage', // Key in LocalStorage
