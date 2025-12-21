@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     Rocket, Star, Battery, Zap,
     Sword, Shield, Heart, Skull, Milestone,
@@ -7,8 +7,9 @@ import {
 import LoadingDisplay from './LoadingDisplay';
 import FormattedText from '../../../common/FormattedText';
 import FitText from '../../../common/FitText';
+import './AdventureUI.css';
 
-const AdventureUI = ({
+const AdventureUI = React.memo(({
     isLoading,
     genre,
     activeEmoji,
@@ -29,36 +30,38 @@ const AdventureUI = ({
     onCombatAction,
     onChoice,
     onReturn,
-    playerElement // NEW PROP
+    playerElement
 }) => {
-
-    const styles = `
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
-        .font-space { font-family: 'Fredoka', sans-serif; }
-        
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
-        @keyframes twinkle { 0%, 100% { opacity: 0.3; scale: 0.8; } 50% { opacity: 1; scale: 1.2; } }
-        @keyframes slide-up { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-        
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
-        .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-shake { animation: shake 0.5s; }
-    `;
+    // Memoize star positions to prevent re-calculation on every render
+    const stars = useMemo(() => [...Array(20)].map((_, i) => ({
+        id: i,
+        top: Math.random() * 100 + '%',
+        left: Math.random() * 100 + '%',
+        animationDelay: Math.random() * 2 + 's',
+        fontSize: Math.random() * 10 + 5 + 'px'
+    })), []);
 
     return (
         <div className={`w-full h-screen font-space text-white overflow-hidden relative flex flex-col items-center justify-center transition-all duration-1000 bg-gradient-to-b ${combatMode ? 'from-red-900 to-black' : bgGradient}`}>
-            {/* INLINE STYLES FOR ANIMATIONS */}
-            <style>{styles}</style>
 
             {/* FULLSCREEN LOADING OVERLAY */}
             {isLoading && <LoadingDisplay genre={genre} emoji={activeEmoji} />}
 
             {/* STARS BG */}
             <div className="absolute inset-0 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
-                    <div key={i} className="absolute text-yellow-200 animate-twinkle" style={{ top: Math.random() * 100 + '%', left: Math.random() * 100 + '%', animationDelay: Math.random() * 2 + 's', fontSize: Math.random() * 10 + 5 + 'px' }}>✦</div>
+                {stars.map((star) => (
+                    <div
+                        key={star.id}
+                        className="absolute text-yellow-200 animate-twinkle"
+                        style={{
+                            top: star.top,
+                            left: star.left,
+                            animationDelay: star.animationDelay,
+                            fontSize: star.fontSize
+                        }}
+                    >
+                        ✦
+                    </div>
                 ))}
             </div>
 
@@ -237,6 +240,6 @@ const AdventureUI = ({
             )}
         </div>
     );
-};
+});
 
 export default AdventureUI;
