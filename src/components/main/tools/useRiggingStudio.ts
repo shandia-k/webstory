@@ -1,44 +1,41 @@
-import { useState, useRef, useEffect } from 'react';
-import {
-    processImageStep,
-    analyzeTagsStep,
-    processAutoTagging,
-    assembleSkeletonStep
-} from './autoRigPipeline';
-import { autoRemoveBackground, magicWandRemove } from './backgroundRemoval';
-import { smartRemoveBackground, detectIslands, drawGridOverlay, processAutoRigging } from './imageProcessing';
-import { analyzeImagePoints } from '../../../services/llmService';
-import { animator } from './animator';
+import { useState, useRef } from 'react';
+// @ts-ignore
+import { processImageStep, analyzeTagsStep, processAutoTagging, assembleSkeletonStep } from './autoRigPipeline';
+// @ts-ignore
+import { magicWandRemove } from './backgroundRemoval';
+// @ts-ignore
 import { WebGLDeformer } from './webglRenderer';
-// import { vectorizeImage } from './vectorizer';
-import { useGame } from '../../../context/GameContext'; // For API Key
+// @ts-ignore
+import { animator } from './animator';
+
+import { useGameStore } from '../../../store/useGameStore'; // Store
 
 export const useRiggingStudio = () => {
     // --- STATE ---
-    const [image, setImage] = useState(null); // URL of uploaded image
-    const [bones, setBones] = useState([]); // Array of { id, x, y, parentId, name }
-    const [slices, setSlices] = useState([]); // Array of { x, y, w, h } for export
-    const [selectedBoneId, setSelectedBoneId] = useState(null);
+    const [image, setImage] = useState<string | null>(null); // URL of uploaded image
+    const [bones, setBones] = useState<any[]>([]); // Array of { id, x, y, parentId, name }
+    const [slices, setSlices] = useState<any[]>([]); // Array of { x, y, w, h } for export
+    const [selectedBoneId, setSelectedBoneId] = useState<string | number | null>(null);
     const [tool, setTool] = useState('add'); // 'add', 'move', 'rotate', 'magic'
     const [scale, setScale] = useState(1);
     const [tolerance, setTolerance] = useState(50); // Color tolerance for magic wand
 
     // Workflow State
     const [workflowStage, setWorkflowStage] = useState('upload'); // 'upload' | 'tagging' | 'assembled'
-    const [pivotData, setPivotData] = useState(null); // RAW Gemini Data
+    const [pivotData, setPivotData] = useState<any>(null); // RAW Gemini Data
 
     // Assembly State
     const [isAssembled, setIsAssembled] = useState(false); // Legacy flag for UI compat
 
     // Drag State
     const [isDragging, setIsDragging] = useState(false);
-    const [draggedBoneId, setDraggedBoneId] = useState(null);
+    const [draggedBoneId, setDraggedBoneId] = useState<string | number | null>(null);
 
     // Canvas Refs
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // --- ACTIONS ---
-    const handleImageUpload = (e) => {
+    const handleImageUpload = (e: any) => {
         const file = e.target.files[0];
         if (file) {
             const tempImg = new Image();
@@ -48,12 +45,12 @@ export const useRiggingStudio = () => {
             };
 
             const reader = new FileReader();
-            reader.onload = (e) => tempImg.src = e.target.result;
+            reader.onload = (e: any) => tempImg.src = e.target.result;
             reader.readAsDataURL(file);
         }
     };
 
-    const processMagicWand = (e) => {
+    const processMagicWand = (e: any) => {
         const img = e.target;
         const scaleX = img.naturalWidth / img.width; // dom vs natural
         const scaleY = img.naturalHeight / img.height;
@@ -69,11 +66,13 @@ export const useRiggingStudio = () => {
     const handleVectorize = () => { alert("Vectorizer is disabled"); };
 
     // --- SMART AUTO-RIG PIPELINE ---
-    const { apiKey } = useGame(); // Get API Key from Context
+    const { settings } = useGameStore(); // Use Store for API Key
+    const apiKey = settings.apiKey;
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusMsg, setStatusMsg] = useState("");
 
-    const runPipelineSteps = async (inputImageElement) => {
+    const runPipelineSteps = async (inputImageElement: any) => {
         const sourceUrl = inputImageElement ? inputImageElement.src : image;
         if (!sourceUrl) return;
         if (!apiKey) {
@@ -109,7 +108,7 @@ export const useRiggingStudio = () => {
             setIsProcessing(false);
             setStatusMsg("");
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Pipeline Error:", error);
             alert("Pipeline Failed: " + error.message);
             setIsProcessing(false);
@@ -118,7 +117,7 @@ export const useRiggingStudio = () => {
     };
 
     // User corrects tags here
-    const handlePartRename = (partIndex, newId) => {
+    const handlePartRename = (partIndex: number, newId: string) => {
         const newSlices = [...slices];
         newSlices[partIndex].id = newId;
         setSlices(newSlices);
@@ -142,7 +141,7 @@ export const useRiggingStudio = () => {
                 setWorkflowStage('assembled');
                 setTool('move');
                 setStatusMsg("");
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Assembly Error:", error);
                 alert("Assembly Failed: " + error.message);
                 setStatusMsg("");
@@ -158,13 +157,13 @@ export const useRiggingStudio = () => {
     // Legacy Wrapper for button if needed, but we use handleImageUpload
     const handleAutoRig = () => {
         const img = new Image();
-        img.src = image;
+        if (image) img.src = image;
         img.onload = () => runPipelineSteps(img);
     };
 
 
-    const handleCanvasClick = (e) => {
-        if (!image) return;
+    const handleCanvasClick = (e: any) => {
+        if (!image || !containerRef.current) return;
         if (workflowStage !== 'assembled') return; // Only edit bones in assembly mode
 
         const rect = containerRef.current.getBoundingClientRect();
@@ -194,7 +193,7 @@ export const useRiggingStudio = () => {
         setSelectedBoneId(null);
     };
 
-    const handleSelection = (boneId) => setSelectedBoneId(boneId);
+    const handleSelection = (boneId: any) => setSelectedBoneId(boneId);
 
     // --- EXPORT & COPY ---
 
@@ -203,7 +202,7 @@ export const useRiggingStudio = () => {
         // Find Root(s)
         const roots = bones.filter(b => !b.parentId);
 
-        const buildBoneTree = (boneId) => {
+        const buildBoneTree: any = (boneId: any) => {
             const bone = bones.find(b => b.id === boneId);
             if (!bone) return null;
 
@@ -254,12 +253,12 @@ export const useRiggingStudio = () => {
             };
         };
 
-        const skeletonData = {};
+        const skeletonData: any = {};
         if (roots.length > 0) {
             skeletonData.rootBone = buildBoneTree(roots[0].id);
         }
 
-        const spritesDict = {};
+        const spritesDict: any = {};
         slices.forEach(s => {
             spritesDict[s.id] = {
                 x: s.bbox.x, y: s.bbox.y, w: s.bbox.w, h: s.bbox.h,
@@ -296,7 +295,7 @@ export const useRiggingStudio = () => {
         // Before correction: PivotData + Initial Parts
         // After correction: ExportData
 
-        let dataToCopy = {};
+        let dataToCopy: any = {};
 
         if (workflowStage === 'tagging') {
             dataToCopy = {
@@ -319,7 +318,7 @@ export const useRiggingStudio = () => {
     };
 
     // --- DRAG HANDLERS ---
-    const handleBoneMouseDown = (e, boneId) => {
+    const handleBoneMouseDown = (e: any, boneId: any) => {
         if (tool !== 'move' && tool !== 'anchor') return;
         e.stopPropagation(); // prevent adding bone
         setIsDragging(true);
@@ -327,8 +326,8 @@ export const useRiggingStudio = () => {
         setSelectedBoneId(boneId);
     };
 
-    const handleCanvasMouseMove = (e) => {
-        if (!isDragging || !draggedBoneId) return;
+    const handleCanvasMouseMove = (e: any) => {
+        if (!isDragging || !draggedBoneId || !containerRef.current) return;
         if (tool !== 'move' && tool !== 'anchor') return;
 
         const rect = containerRef.current.getBoundingClientRect();
@@ -343,7 +342,7 @@ export const useRiggingStudio = () => {
             const dy = newY - currentBone.y;
 
             // Find all descendants to move them together (Hierarchy)
-            const getDescendants = (parentId) => {
+            const getDescendants: any = (parentId: any) => {
                 const children = prevBones.filter(b => b.parentId === parentId);
                 let descendants = [...children];
                 children.forEach(child => {
@@ -353,7 +352,7 @@ export const useRiggingStudio = () => {
             };
 
             const descendants = getDescendants(draggedBoneId);
-            const affectedIds = new Set([draggedBoneId, ...descendants.map(b => b.id)]);
+            const affectedIds = new Set([draggedBoneId, ...descendants.map((b: any) => b.id)]);
 
             return prevBones.map(b => {
                 if (affectedIds.has(b.id)) {
@@ -386,15 +385,15 @@ export const useRiggingStudio = () => {
     const currentAnimRef = useRef(null); // Ref for loop access
 
     // Animation Refs
-    const requestRef = useRef();
-    const startTimeRef = useRef();
-    const restBonesRef = useRef([]);
+    const requestRef = useRef<any>();
+    const startTimeRef = useRef<any>();
+    const restBonesRef = useRef<any>([]);
 
     // Renderer Refs
-    const deformerRef = useRef(null);
-    const canvasRef = useRef(null); // Ref to the GL canvas
+    const deformerRef = useRef<any>(null);
+    const canvasRef = useRef<any>(null); // Ref to the GL canvas
 
-    const startAnimation = (animName) => {
+    const startAnimation = (animName: any) => {
         if (!image) return;
 
         // Reset Physics on new start
@@ -459,7 +458,7 @@ export const useRiggingStudio = () => {
         }
     };
 
-    const animateLoop = (time) => {
+    const animateLoop = (time: any) => {
         if (!startTimeRef.current) startTimeRef.current = time;
         const elapsed = time - startTimeRef.current;
 

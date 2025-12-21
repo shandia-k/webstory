@@ -10,6 +10,7 @@ export interface GameSlice {
   setPhase: (phase: Phase) => void;
   setWorld: (world: WorldType) => void;
   resetGame: () => void;
+  loadGameData: (data: any) => void;
 }
 
 export const createGameSlice: StateCreator<GameStore, [["zustand/immer", never]], [], GameSlice> = (set) => ({
@@ -21,6 +22,16 @@ export const createGameSlice: StateCreator<GameStore, [["zustand/immer", never]]
 
   resetGame: () => set((state) => {
     state.phase = 'hub';
-    // Logic to reset other slices could be triggered via a root action
+    state.player = null;
+    state.items = [];
+    state.combat = { isActive: false, phase: 'init', enemy: null, logs: [] };
+  }),
+
+  loadGameData: (data) => set((state) => {
+    if (data.player) state.player = data.player;
+    if (data.items) state.items = data.items;
+    if (data.phase) state.phase = data.phase;
+    if (data.world) state.world = data.world;
+    // Add other slices as needed
   })
 });
