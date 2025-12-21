@@ -4,7 +4,7 @@ import { generateAdventure } from '../../../services/llmService';
 import { GAME_CONTENT } from '../../../constants/gameContent';
 import AdventureUI from './adventure/AdventureUI';
 import CombatArena from './combat/CombatArena'; // [NEW] Integrated Combat
-import { calculateXpGain, getLevelUpBonuses } from '../../../game-mechanics/LevelingSystem';
+import { calculateXpGain, getLevelUpBonuses, calculateCombatRewards } from '../../../game-mechanics/LevelingSystem';
 
 const AdventureEngine = ({ palData, onReturn, genre }) => {
     const { apiKey, genre: contextGenre, uiText, language } = useGame();
@@ -16,7 +16,8 @@ const AdventureEngine = ({ palData, onReturn, genre }) => {
         happiness: palData?.role?.stats?.happiness || 50,
         energy: palData?.role?.stats?.energy || 80,
         hunger: palData?.role?.stats?.hunger || 50,
-        xp: palData?.role?.stats?.xp || 0
+        xp: palData?.role?.stats?.xp || 0,
+        level: palData?.role?.stats?.level || 1
     });
 
     const [maxHp] = useState(100); // Visual max for UI bars
@@ -128,12 +129,23 @@ const AdventureEngine = ({ palData, onReturn, genre }) => {
             validEmoji = GAME_CONTENT.COMBAT.DEFAULT_ENEMY.EMOJI;
         }
 
+        // [NEW] Dynamic Enemy Stats
+        const playerLevel = currentStats.level || 1;
+        // Enemy Level is Player Level +/- 1
+        const enemyLevel = Math.max(1, playerLevel + (Math.floor(Math.random() * 3) - 1));
+        const difficulty = 1.0; // Standard for now
+
+        const rewards = calculateCombatRewards(enemyLevel, difficulty);
+
         setActiveEnemy({
             name: enemyData?.name || GAME_CONTENT.COMBAT.DEFAULT_ENEMY.NAME,
             emoji: validEmoji,
             element: enemyData?.element || GAME_CONTENT.COMBAT.DEFAULT_ENEMY.ELEMENT,
             hp: 150,
-            maxHp: 150
+            maxHp: 150,
+            level: enemyLevel,
+            difficulty: difficulty,
+            rewards: rewards
         });
         setCombatMode(true);
     };
@@ -150,7 +162,8 @@ const AdventureEngine = ({ palData, onReturn, genre }) => {
 
         if (victory) {
             // [NEW] XP GAIN SYSTEM
-            const xpGained = 50; // Fixed XP per win for now
+            // Use dynamic reward if available, else fallback to 50
+            const xpGained = activeEnemy?.rewards?.xp || 50;
             const { level, xp, didLevelUp } = calculateXpGain(
                 statsAfterCombat.level || 1,
                 statsAfterCombat.xp || 0,
