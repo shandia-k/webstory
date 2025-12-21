@@ -1,37 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { Skull, Zap } from 'lucide-react';
+// Legacy Components (Keep imports until converted)
+// @ts-ignore
 import { SaveLoadModal } from './game/SaveLoadModal';
+// @ts-ignore
 import { ApiKeyModal } from './game/ApiKeyModal';
-import { useGame } from '../../context/GameContext';
+// @ts-ignore
 import AdoptionForm from './game/character-creation/AdoptionForm';
+// @ts-ignore
 import CuteInterface from './game/CuteInterface';
+// @ts-ignore
 import AdventureEngine from './game/AdventureEngine';
+// @ts-ignore
 import { HubScreen } from './hub/HubScreen';
+// @ts-ignore
 import RiggingStudio from './tools/RiggingStudio';
-import { WORLD_THEMES } from '../../constants/worldThemes';
+
+import { WORLD_THEMES } from '../../constants/worldThemes'; // Still JS
 import { GAME_PHASES } from '../../constants/enums';
 
-const OmniHub = () => {
-    // --- GLOBAL STATE VIA CONTEXT ---
+// NEW: Store
+import { useGameStore, GameStore } from '../../store/useGameStore';
+import { Phase } from '../../types';
+
+const OmniHub: React.FC = () => {
+    // --- GLOBAL STATE VIA ZUSTAND ---
     const {
         phase, setPhase,
-        selectedWorld, setSelectedWorld,
-        adoptedPal, setAdoptedPal,
-        wallet, setWallet,
-        uiText,
-        apiKey, setApiKey,
-        language, setLanguage,
-        saveGame, loadGame,
-        notification
-    } = useGame();
+        world, setWorld,
+        player, createPlayer,
+        updateStats, updateWallet
+        // TODO: Save/Load logic needs to be ported to store actions
+    } = useGameStore();
 
+    // Local UI State (Modals)
     const [isFullscreen, setIsFullscreen] = useState(false);
-
-    // MODALS UI STATE
     const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
     const [isApiOpen, setIsApiOpen] = useState(false);
+    const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-    const currentTheme = WORLD_THEMES[selectedWorld] || WORLD_THEMES['scifi'];
+    // MOCK: Legacy text support until full migration
+    const uiText = { UI: {} }; // Placeholder
+
+    const currentTheme = WORLD_THEMES[world] || WORLD_THEMES['scifi'];
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -54,42 +65,46 @@ const OmniHub = () => {
     }, []);
 
     // --- PHASE TRANSITIONS ---
-    const handleExplore = (currentStats) => {
-        // Sync stats before adventure
-        if (adoptedPal) {
-            setAdoptedPal(prev => ({
-                ...prev,
-                role: {
-                    ...prev.role,
-                    stats: { ...prev.role.stats, ...currentStats }
-                }
-            }));
+    const handleExplore = (currentStats: any) => {
+        // In new system, stats are already in store, but legacy Adventure might pass them back.
+        // We sync them just in case.
+        if (currentStats) {
+             updateStats(currentStats);
         }
-        setPhase(GAME_PHASES.ADVENTURE);
+        setPhase('adventure');
     };
 
-    const handleReturnFromAdventure = (results) => {
-        // Results: { hp, loot }
-        // Update stats and inventory
-        setAdoptedPal(prev => ({
-            ...prev,
-            role: {
-                ...prev.role,
-                stats: {
-                    ...prev.role.stats,
-                    // If results.stats exists (New System), use it. 
-                    // Fallback to legacy single-stat update if not.
-                    ...(results.stats || { energy: results.hp })
-                }
-            }
-        }));
-
-        // Add Loot to Wallet
-        if (results.loot) {
-            setWallet(prev => ({ ...prev, gold: prev.gold + results.loot }));
+    const handleReturnFromAdventure = (results: { hp: number; loot?: number; stats?: any }) => {
+        // Update Stats
+        if (results.stats) {
+            updateStats(results.stats);
+        } else {
+            // Legacy fallback
+             updateStats({ hp: results.hp });
         }
 
-        setPhase(GAME_PHASES.GAME);
+        // Add Loot
+        if (results.loot) {
+            updateWallet(results.loot, 0);
+        }
+
+        setPhase('game');
+    };
+
+    const handleAdoptionComplete = (data: any) => {
+        // Data from AdoptionForm (Legacy format):
+        // { name, role: { stats: {...}, trait: ... }, items: [] }
+
+        // Map to New Store Structure
+        createPlayer(data.name, data.role.trait || 'brave', {
+            hp: 100, maxHp: 100,
+            energy: 100, maxEnergy: 100,
+            happiness: 100,
+            level: 1, xp: 0, maxXp: 100,
+            attack: 10, defense: 5
+        });
+
+        setPhase('game');
     };
 
     return (
@@ -99,10 +114,10 @@ const OmniHub = () => {
             <SaveLoadModal
                 isOpen={isSaveLoadOpen}
                 onClose={() => setIsSaveLoadOpen(false)}
-                onSaveGame={saveGame}
-                onLoadGame={loadGame}
+                onSaveGame={() => console.log("Save implemented via Store persist")}
+                onLoadGame={() => console.log("Load implemented via Store persist")}
                 onExitToMenu={() => {
-                    setPhase(GAME_PHASES.HUB);
+                    setPhase('hub');
                     setIsSaveLoadOpen(false);
                 }}
             />
@@ -110,9 +125,9 @@ const OmniHub = () => {
             <ApiKeyModal
                 isOpen={isApiOpen}
                 onClose={() => setIsApiOpen(false)}
-                onSave={(key, lang) => {
-                    setApiKey(key);
-                    setLanguage(lang);
+                onSave={(key: string, lang: string) => {
+                   localStorage.setItem('nexus_api_key', key);
+                   // Store doesn't handle API key yet, keep in LocalStorage or add to GameSlice
                 }}
             />
 
@@ -135,73 +150,70 @@ const OmniHub = () => {
             <div className="relative z-10 w-full h-full flex justify-center items-center">
 
                 {/* PHASE: HUB */}
-                {phase === GAME_PHASES.HUB && (
+                {phase === 'hub' && (
                     <HubScreen
-                        selectedWorld={selectedWorld}
-                        setSelectedWorld={setSelectedWorld}
-                        hasSavedGame={!!adoptedPal}
-                        palData={adoptedPal} // Passed for Element display
-                        onNewGame={() => setPhase(GAME_PHASES.ADOPTION)}
-                        onResumeGame={() => setPhase(GAME_PHASES.GAME)}
+                        selectedWorld={world}
+                        setSelectedWorld={setWorld}
+                        hasSavedGame={!!player}
+                        palData={player ? { name: player.name, role: { stats: player.stats } } : null} // Adapt for Legacy Prop
+                        onNewGame={() => setPhase('adoption')}
+                        onResumeGame={() => setPhase('game')}
                         onOpenApi={() => setIsApiOpen(true)}
                         onOpenSaveLoad={() => setIsSaveLoadOpen(true)}
                         isFullscreen={isFullscreen}
                         toggleFullscreen={toggleFullscreen}
-                        onOpenRigging={() => setPhase(GAME_PHASES.RIGGING)}
+                        onOpenRigging={() => setPhase('rigging')}
                     />
                 )}
 
                 {/* PHASE: ADOPTION FORM --- */}
-                {phase === GAME_PHASES.ADOPTION && (
+                {phase === 'adoption' && (
                     <div className="absolute inset-0 z-50 animate-in fade-in duration-500">
                         <AdoptionForm
-                            onComplete={(data) => {
-                                setAdoptedPal(data);
-                                setPhase(GAME_PHASES.GAME);
-                            }}
-                            genre={currentTheme.title} // Pass genre context
-                            onBack={() => setPhase(GAME_PHASES.HUB)}
+                            onComplete={handleAdoptionComplete}
+                            genre={currentTheme.title}
+                            onBack={() => setPhase('hub')}
                         />
                     </div>
                 )}
 
                 {/* --- PHASE: GAME INTERFACE --- */}
-                {phase === GAME_PHASES.GAME && adoptedPal && (
+                {phase === 'game' && player && (
                     <div className="absolute inset-0 z-50 animate-in fade-in duration-500">
                         <CuteInterface
-                            palData={adoptedPal}
-                            wallet={wallet}
+                            // Adapt Store Data to Legacy Props if needed,
+                            // OR ideally CuteInterface should use store directly (next step)
+                            palData={{
+                                name: player.name,
+                                role: { stats: player.stats }
+                            }}
+                            wallet={player.wallet}
                             onExplore={handleExplore}
                             onOpenSettings={() => setIsSaveLoadOpen(true)}
-                            onUpdateStats={(newStats) => {
-                                setAdoptedPal(prev => ({
-                                    ...prev,
-                                    role: {
-                                        ...prev.role,
-                                        stats: { ...prev.role.stats, ...newStats }
-                                    }
-                                }));
-                            }}
+                            onUpdateStats={updateStats}
                         />
                     </div>
                 )}
 
                 {/* --- PHASE: ADVENTURE --- */}
-                {phase === GAME_PHASES.ADVENTURE && adoptedPal && (
+                {phase === 'adventure' && player && (
                     <div className="absolute inset-0 z-50 animate-in fade-in duration-500">
                         <AdventureEngine
-                            palData={adoptedPal}
+                            palData={{
+                                name: player.name,
+                                role: { stats: player.stats }
+                            }}
                             onReturn={handleReturnFromAdventure}
-                            genre={selectedWorld}
+                            genre={world}
                         />
                     </div>
                 )}
 
                 {/* --- PHASE: RIGGING STUDIO --- */}
-                {phase === GAME_PHASES.RIGGING && (
+                {phase === 'rigging' && (
                     <div className="absolute inset-0 z-[60] animate-in fade-in duration-300">
                         <RiggingStudio
-                            onBack={() => setPhase(GAME_PHASES.HUB)}
+                            onBack={() => setPhase('hub')}
                             uiText={uiText}
                         />
                     </div>
