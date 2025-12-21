@@ -10,6 +10,8 @@ export class WebGLDeformer {
         this.program = null;
         this.positionBuffer = null;
         this.texCoordBuffer = null;
+        this.boneIndexBuffer = null;
+        this.weightBuffer = null;
         this.indexBuffer = null;
         this.texture = null;
 
@@ -17,6 +19,8 @@ export class WebGLDeformer {
         this.vertices = []; // [x, y, ...]
         this.texCoords = []; // [u, v, ...]
         this.indices = [];
+        this.baseBonePositions = []; // [{x, y}, ...]
+        this.boneTransformsData = new Float32Array(64 * 2); // Pre-allocated for GC
 
         this.skinIndices = []; // Vertex Index -> Bone Index
         this.skinOffsets = []; // Vertex Index -> {dx, dy} (Normalized)
@@ -36,15 +40,36 @@ export class WebGLDeformer {
         const vsSource = `
             attribute vec2 a_position;
             attribute vec2 a_texCoord;
+            attribute vec4 a_boneIndices;
+            attribute vec4 a_weights;
+
+            uniform vec2 u_boneTransforms[64];
+
             varying vec2 v_texCoord;
+
             void main() {
+                // Weighted Skinning in Vertex Shader
+                vec2 offset = vec2(0.0);
+
+                // Get indices as integers
+                int b0 = int(a_boneIndices.x);
+                int b1 = int(a_boneIndices.y);
+                int b2 = int(a_boneIndices.z);
+                int b3 = int(a_boneIndices.w);
+
+                // Accumulate weighted bone transforms
+                offset += u_boneTransforms[b0] * a_weights.x;
+                offset += u_boneTransforms[b1] * a_weights.y;
+                offset += u_boneTransforms[b2] * a_weights.z;
+                offset += u_boneTransforms[b3] * a_weights.w;
+
+                vec2 finalPosition = a_position + offset;
+
                 // Convert 0.0->1.0 space to -1.0->1.0 clip space
-                // Y is flipped in WebGL usually, but here our coords are top-down 0-1
                 // Clip Space: -1,-1 (bottom left) to 1,1 (top right)
                 // Input: 0,0 (top left) to 1,1 (bottom right)
                 
-                vec2 zeroToOne = a_position;
-                vec2 zeroToTwo = zeroToOne * 2.0;
+                vec2 zeroToTwo = finalPosition * 2.0;
                 vec2 clipSpace = zeroToTwo - 1.0;
                 
                 gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
@@ -68,6 +93,10 @@ export class WebGLDeformer {
 
         this.positionLocation = gl.getAttribLocation(this.program, "a_position");
         this.texCoordLocation = gl.getAttribLocation(this.program, "a_texCoord");
+        this.boneIndicesLocation = gl.getAttribLocation(this.program, "a_boneIndices");
+        this.weightsLocation = gl.getAttribLocation(this.program, "a_weights");
+
+        this.boneTransformsLocation = gl.getUniformLocation(this.program, "u_boneTransforms");
     }
 
     createShader(gl, type, source) {
@@ -97,6 +126,9 @@ export class WebGLDeformer {
     initMesh(image, bones) {
         const gl = this.gl;
 
+        // Store base bone positions to calculate deltas later
+        this.baseBonePositions = bones.map(b => ({ x: b.x, y: b.y }));
+
         // 1. Create Texture
         this.texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -117,7 +149,9 @@ export class WebGLDeformer {
         this.vertices = [];
         this.texCoords = [];
         this.indices = [];
-        this.skinData = []; // Store Objects: { bones: [idx1, idx2, idx3], weights: [w1, w2, w3], offsets: [{dx,dy}, ...] }
+
+        const boneIndices = []; // Flattened vec4: [b0, b1, b2, b3, ...]
+        const boneWeights = []; // Flattened vec4: [w0, w1, w2, w3, ...]
 
         const cols = this.gridSize;
         const rows = this.gridSize;
@@ -165,31 +199,29 @@ export class WebGLDeformer {
                         return { index: i, weight: weight, bone: b };
                     });
 
-                    // Sort by weight desc and take top 3
+                    // Sort by weight desc and take top 4
                     influences.sort((a, b) => b.weight - a.weight);
-                    influences = influences.slice(0, 3);
+                    influences = influences.slice(0, 4);
                 }
 
                 // Normalize weights
                 const totalWeight = influences.reduce((sum, inf) => sum + inf.weight, 0);
 
-                const vertexSkinData = {
-                    indices: [],
-                    weights: [],
-                    restOffsets: []
-                };
+                // Prepare vec4 data (up to 4 bones)
+                const indicesVec = [0, 0, 0, 0];
+                const weightsVec = [0, 0, 0, 0];
 
-                influences.forEach(inf => {
+                influences.forEach((inf, idx) => {
+                    // Re-normalize against the total of the kept influences
                     const normWeight = inf.weight / totalWeight;
-                    vertexSkinData.indices.push(inf.index);
-                    vertexSkinData.weights.push(normWeight);
-                    vertexSkinData.restOffsets.push({
-                        dx: u - inf.bone.x,
-                        dy: v - inf.bone.y
-                    });
+                    if (idx < 4) {
+                        indicesVec[idx] = inf.index;
+                        weightsVec[idx] = normWeight;
+                    }
                 });
 
-                this.skinData.push(vertexSkinData);
+                boneIndices.push(...indicesVec);
+                boneWeights.push(...weightsVec);
             }
         }
 
@@ -207,11 +239,20 @@ export class WebGLDeformer {
 
         // Buffers
         this.positionBuffer = gl.createBuffer();
-        this.texCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
 
-        // Static TexCoords
+        this.texCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
+
+        this.boneIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.boneIndexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boneIndices), gl.STATIC_DRAW);
+
+        this.weightBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.weightBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boneWeights), gl.STATIC_DRAW);
 
         this.indexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
@@ -226,46 +267,41 @@ export class WebGLDeformer {
 
         gl.useProgram(this.program);
 
-        // Update Vertices based on Weighted Skinning (CPU Side)
-        // ideally this is a Vertex Shader job, but for < 2000 verts CPU is fine and easier to debug
-
-        const newVertices = [];
-        let vertIdx = 0;
-
-        for (let k = 0; k < this.skinData.length; k++) {
-            const skin = this.skinData[k];
-
-            let finalX = 0;
-            let finalY = 0;
-
-            // Blended Position = Sum(Weight * (BonePos + RestOffset))
-            for (let i = 0; i < skin.indices.length; i++) {
-                const boneIdx = skin.indices[i];
-                const weight = skin.weights[i];
-                const offset = skin.restOffsets[i];
-
-                if (bones[boneIdx]) {
-                    const b = bones[boneIdx];
-                    finalX += (b.x + offset.dx) * weight;
-                    finalY += (b.y + offset.dy) * weight;
-                }
-            }
-
-            newVertices.push(finalX, finalY);
-            vertIdx++;
+        // Calculate Bone Transforms
+        // Support up to 64 bones as defined in shader
+        for (let i = 0; i < 64; i++) {
+             const idx = i * 2;
+             if (i < bones.length && i < this.baseBonePositions.length) {
+                 const current = bones[i];
+                 const base = this.baseBonePositions[i];
+                 // Transform = Current - Base
+                 this.boneTransformsData[idx] = current.x - base.x;
+                 this.boneTransformsData[idx + 1] = current.y - base.y;
+             } else {
+                 this.boneTransformsData[idx] = 0;
+                 this.boneTransformsData[idx + 1] = 0;
+             }
         }
 
-        // Upload new positions
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(newVertices), gl.DYNAMIC_DRAW);
+        // Upload Uniforms
+        gl.uniform2fv(this.boneTransformsLocation, this.boneTransformsData);
 
         // Attributes
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         gl.enableVertexAttribArray(this.positionLocation);
         gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
         gl.enableVertexAttribArray(this.texCoordLocation);
         gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.boneIndexBuffer);
+        gl.enableVertexAttribArray(this.boneIndicesLocation);
+        gl.vertexAttribPointer(this.boneIndicesLocation, 4, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.weightBuffer);
+        gl.enableVertexAttribArray(this.weightsLocation);
+        gl.vertexAttribPointer(this.weightsLocation, 4, gl.FLOAT, false, 0, 0);
 
         // Draw
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
