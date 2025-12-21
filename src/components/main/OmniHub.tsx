@@ -92,9 +92,15 @@ const OmniHub: React.FC = () => {
     };
 
     const handleAdoptionComplete = (data: any) => {
+<<<<<<< HEAD
         // Data from AdoptionForm (Legacy format):
         // { name, role: { stats: {...}, trait: ... }, items: [] }
 
+=======
+        // Data from AdoptionForm (Legacy format):
+        // { name, role: { stats: {...}, trait: ... }, items: [] }
+
+>>>>>>> origin/main
         // Map to New Store Structure
         createPlayer(data.name, data.role.trait || 'brave', {
             hp: 100, maxHp: 100,
@@ -181,11 +187,19 @@ const OmniHub: React.FC = () => {
                 {phase === 'game' && player && (
                     <div className="absolute inset-0 z-50 animate-in fade-in duration-500">
                         <CuteInterface
+<<<<<<< HEAD
                             // Adapt Store Data to Legacy Props if needed,
                             // OR ideally CuteInterface should use store directly (next step)
                             palData={{
                                 name: player.name,
                                 role: { stats: player.stats }
+=======
+                            // Adapt Store Data to Legacy Props if needed,
+                            // OR ideally CuteInterface should use store directly (next step)
+                            palData={{
+                                name: player.name,
+                                role: { stats: player.stats }
+>>>>>>> origin/main
                             }}
                             wallet={player.wallet}
                             onExplore={handleExplore}
@@ -199,9 +213,15 @@ const OmniHub: React.FC = () => {
                 {phase === 'adventure' && player && (
                     <div className="absolute inset-0 z-50 animate-in fade-in duration-500">
                         <AdventureEngine
+<<<<<<< HEAD
                             palData={{
                                 name: player.name,
                                 role: { stats: player.stats }
+=======
+                            palData={{
+                                name: player.name,
+                                role: { stats: player.stats }
+>>>>>>> origin/main
                             }}
                             onReturn={handleReturnFromAdventure}
                             genre={world}

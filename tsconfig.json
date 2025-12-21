@@ -19,7 +19,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
     /* Path Aliases (Optional but good) */
     "baseUrl": "./src",
     "paths": {

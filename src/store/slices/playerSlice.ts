@@ -4,7 +4,11 @@ import { GameStore } from '../useGameStore';
 
 export interface PlayerSlice {
   player: PlayerState | null; // Null if no character created yet
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
   // Actions
   createPlayer: (name: string, trait: string, initialStats: Stats) => void;
   updateStats: (updates: Partial<Stats>) => void;
@@ -39,7 +43,11 @@ export const createPlayerSlice: StateCreator<GameStore, [["zustand/immer", never
       if (!state.player) return;
       // Merge updates
       Object.assign(state.player.stats, updates);
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
       // Clamp values
       const s = state.player.stats;
       s.hp = Math.min(Math.max(s.hp, 0), s.maxHp);
@@ -51,24 +59,42 @@ export const createPlayerSlice: StateCreator<GameStore, [["zustand/immer", never
     set((state) => {
       if (!state.player) return;
       const s = state.player.stats;
+<<<<<<< HEAD
 
       s.xp += amount;
 
+=======
+
+      s.xp += amount;
+
+>>>>>>> origin/main
       // Level Up Logic (Simple while loop for multi-level)
       while (s.xp >= s.maxXp) {
         s.xp -= s.maxXp;
         s.level += 1;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
         // Stat Growth
         s.maxHp += 10;
         s.maxEnergy += 5;
         s.attack += 2;
         s.defense += 1;
+<<<<<<< HEAD
 
         // Full Heal on Level Up
         s.hp = s.maxHp;
         s.energy = s.maxEnergy;
 
+=======
+
+        // Full Heal on Level Up
+        s.hp = s.maxHp;
+        s.energy = s.maxEnergy;
+
+>>>>>>> origin/main
         // Increase XP requirement
         s.maxXp = Math.floor(s.maxXp * 1.5);
       }

@@ -21,7 +21,11 @@ export const useGameStore = create<GameStore>()(
     })),
     {
       name: 'rpg-game-storage', // Key in LocalStorage
+<<<<<<< HEAD
       partialize: (state) => ({
+=======
+      partialize: (state) => ({
+>>>>>>> origin/main
         // Select what to persist
         player: state.player,
         items: state.items,

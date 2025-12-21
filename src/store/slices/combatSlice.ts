@@ -13,7 +13,11 @@ export interface CombatState {
 
 export interface CombatSlice {
   combat: CombatState;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
   // Actions
   startCombat: (enemyId: string) => void;
   playerAttack: () => void;
@@ -35,7 +39,11 @@ export const createCombatSlice: StateCreator<GameStore, [["zustand/immer", never
     logs: []
   },
 
+<<<<<<< HEAD
   startCombat: (enemyId) =>
+=======
+  startCombat: (enemyId) =>
+>>>>>>> origin/main
     set((state) => {
       const enemyDef = ENEMY_DB[enemyId];
       if (!enemyDef) return;
@@ -48,6 +56,7 @@ export const createCombatSlice: StateCreator<GameStore, [["zustand/immer", never
       };
     }),
 
+<<<<<<< HEAD
   playerAttack: () =>
     set((state) => {
       // Access Player Stats via get() if needed, but here we modify state directly in immer
@@ -56,6 +65,16 @@ export const createCombatSlice: StateCreator<GameStore, [["zustand/immer", never
       // ideally, we access the full store via `get()` but inside `set` we only see local slice unless combined.
       // Wait, with shared slice pattern, `set` operates on the WHOLE store.
 
+=======
+  playerAttack: () =>
+    set((state) => {
+      // Access Player Stats via get() if needed, but here we modify state directly in immer
+      // Note: Zustand slices don't easily allow cross-slice access inside `set` without `get()`.
+      // For simple logic, we assume player stats are passed or handled by component.
+      // ideally, we access the full store via `get()` but inside `set` we only see local slice unless combined.
+      // Wait, with shared slice pattern, `set` operates on the WHOLE store.
+
+>>>>>>> origin/main
       const { combat, player } = state as any; // Cast to access other slices
       if (!combat.enemy || !player) return;
 
@@ -72,7 +91,11 @@ export const createCombatSlice: StateCreator<GameStore, [["zustand/immer", never
       }
     }),
 
+<<<<<<< HEAD
   enemyTurn: () =>
+=======
+  enemyTurn: () =>
+>>>>>>> origin/main
     set((state) => {
       const { combat, player } = state as any;
       if (!combat.enemy || !player) return;
@@ -89,7 +112,11 @@ export const createCombatSlice: StateCreator<GameStore, [["zustand/immer", never
       }
     }),
 
+<<<<<<< HEAD
   endCombat: () =>
+=======
+  endCombat: () =>
+>>>>>>> origin/main
     set((state) => {
       state.combat.isActive = false;
       state.combat.logs = [];

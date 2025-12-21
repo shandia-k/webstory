@@ -63,8 +63,13 @@ const AdoptionForm: React.FC<AdoptionFormProps> = ({ onComplete, genre }) => {
         if (!name || !palsData) return;
 
         // [NEW] Generate Campaign Start (Simplified for migration)
+<<<<<<< HEAD
         setLoading(true);
 
+=======
+        setLoading(true);
+
+>>>>>>> origin/main
         // Note: Campaign setting logic should be moved to store, skipping for now to focus on Adoption
         // let campaignData = ...
 

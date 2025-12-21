@@ -7,7 +7,11 @@ export interface SettingsSlice {
     language: string;
     volume: number;
   };
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
   // Actions
   setApiKey: (key: string) => void;
   setLanguage: (lang: string) => void;

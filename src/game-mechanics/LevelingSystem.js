@@ -62,3 +62,33 @@ export const getLevelUpBonuses = (newLevel) => {
         happiness: 100 // Full heal!
     };
 };
+
+/**
+ * Calculates rewards for winning a combat.
+ * Dynamic XP based on Enemy Level and Difficulty.
+ */
+export const calculateCombatRewards = (enemyLevel, difficultyMultiplier = 1) => {
+    // Base XP for an "even" fight (Player Level = Enemy Level)
+    // We want ~5 fights per level.
+    // Level 1->2 needs 100XP. So ~20XP base.
+    // Scaling formula: Base * (Multiplier ^ (Level - 1))
+    // This matches the XP requirement curve, ensuring constant "fights per level".
+
+    const { MULTIPLIER } = GAME_CONFIG.EXP_CURVES;
+    // Base XP Reward constant. If Base Requirement is 100, Reward Base is 20 (1/5th).
+    const REWARD_BASE = 20;
+
+    // XP = 20 * (1.5 ^ (EnemyLevel - 1)) * Difficulty
+    let rawXp = REWARD_BASE * Math.pow(MULTIPLIER, enemyLevel - 1);
+
+    // Apply Difficulty
+    rawXp = rawXp * difficultyMultiplier;
+
+    // Apply random variance (+/- 10%)
+    const variance = 0.9 + (Math.random() * 0.2);
+    rawXp = rawXp * variance;
+
+    return {
+        xp: Math.floor(Math.max(1, rawXp))
+    };
+};

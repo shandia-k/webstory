@@ -4,6 +4,7 @@ import { GameStore } from '../useGameStore';
 
 // Mock Database for Items (Should be in a separate data file eventually)
 const ITEM_DB: Record<string, ItemDefinition> = {
+<<<<<<< HEAD
   'potion_hp': {
     id: 'potion_hp', name: 'Health Potion', type: 'consumable',
     description: 'Restores 50 HP', maxStack: 99, value: 10,
@@ -13,12 +14,27 @@ const ITEM_DB: Record<string, ItemDefinition> = {
     id: 'sword_basic', name: 'Rusty Sword', type: 'weapon',
     description: 'A basic sword', maxStack: 1, value: 50,
     modifiers: { attack: 5 }
+=======
+  'potion_hp': {
+    id: 'potion_hp', name: 'Health Potion', type: 'consumable',
+    description: 'Restores 50 HP', maxStack: 99, value: 10,
+    modifiers: { hp: 50 }
+  },
+  'sword_basic': {
+    id: 'sword_basic', name: 'Rusty Sword', type: 'weapon',
+    description: 'A basic sword', maxStack: 1, value: 50,
+    modifiers: { attack: 5 }
+>>>>>>> origin/main
   }
 };
 
 export interface InventorySlice {
   items: ItemInstance[];
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
   // Actions
   addItem: (defId: string, qty: number) => boolean;
   removeItem: (instanceId: string, qty?: number) => void;
@@ -59,13 +75,21 @@ export const createInventorySlice: StateCreator<GameStore, [["zustand/immer", ne
           qty: Math.min(qty, def.maxStack),
           durability: def.type === 'weapon' ? 100 : undefined
         };
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
         state.items.push(newInstance);
         qty -= newInstance.qty;
         success = true;
       }
     });
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
     return success;
   },
 
@@ -76,13 +100,21 @@ export const createInventorySlice: StateCreator<GameStore, [["zustand/immer", ne
 
       const item = state.items[idx];
       item.qty -= qty;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/main
       if (item.qty <= 0) {
         state.items.splice(idx, 1);
       }
     }),
 
+<<<<<<< HEAD
   equipItem: (instanceId) =>
+=======
+  equipItem: (instanceId) =>
+>>>>>>> origin/main
     set((state) => {
       const item = state.items.find(i => i.instanceId === instanceId);
       if (!item) return;
