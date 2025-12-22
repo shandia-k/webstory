@@ -11,12 +11,17 @@ export const GAME_CONFIG = {
         gold: 100,
         gems: 0
     },
+    INITIAL_INVENTORY: [
+        { name: 'Small Potion', icon: '🧪', desc: 'Restores 50 HP.' },
+        { name: 'Small Potion', icon: '🧪', desc: 'Restores 50 HP.' },
+        { name: 'Mega Burger', icon: '🍔', desc: 'A delicious meal.' }
+    ],
     INITIAL_CAMPAIGN: {
         isActive: false,
         title: null,
         mainGoal: null,
         currentChapter: 0,
-        historySummary: [], // ["Met a merchant", "Defeated the Rat King"]
+        historySummary: [],
         knowledge: {}
     },
     COMBAT: {
