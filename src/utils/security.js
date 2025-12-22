@@ -8,9 +8,10 @@ const REDACTED_LABEL = '[REDACTED]';
  * Recursively sanitizes data to remove sensitive information.
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} seen - Internal use only: tracks visited objects in current stack to prevent circular reference crashes
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], seen = new WeakSet()) => {
     if (!data) return data;
     if (secrets.length === 0) return data;
 
@@ -27,17 +28,28 @@ export const sanitizeData = (data, secrets = []) => {
         return sanitized;
     }
 
+    // Handle circular references
+    if (typeof data === 'object') {
+        if (seen.has(data)) {
+            return '[CIRCULAR]';
+        }
+        seen.add(data);
+    }
+
     if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
+        const result = data.map(item => sanitizeData(item, activeSecrets, seen));
+        if (typeof data === 'object') seen.delete(data); // Clean up stack
+        return result;
     }
 
     if (typeof data === 'object') {
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], activeSecrets, seen);
             }
         }
+        seen.delete(data); // Clean up stack
         return sanitizedObj;
     }
 
