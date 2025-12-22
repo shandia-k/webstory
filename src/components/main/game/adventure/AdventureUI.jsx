@@ -5,6 +5,7 @@ import {
     Flag, ArrowRight, CheckCircle
 } from 'lucide-react';
 import LoadingDisplay from './LoadingDisplay';
+import StarBackground from './StarBackground';
 import FormattedText from '../../../common/FormattedText';
 import FitText from '../../../common/FitText';
 import './AdventureUI.css';
@@ -32,15 +33,6 @@ const AdventureUI = React.memo(({
     onReturn,
     playerElement
 }) => {
-    // Memoize star positions to prevent re-calculation on every render
-    const stars = useMemo(() => [...Array(20)].map((_, i) => ({
-        id: i,
-        top: Math.random() * 100 + '%',
-        left: Math.random() * 100 + '%',
-        animationDelay: Math.random() * 2 + 's',
-        fontSize: Math.random() * 10 + 5 + 'px'
-    })), []);
-
     return (
         <div className={`w-full h-screen font-space text-white overflow-hidden relative flex flex-col items-center justify-center transition-all duration-1000 bg-gradient-to-b ${combatMode ? 'from-red-900 to-black' : bgGradient}`}>
 
@@ -48,22 +40,7 @@ const AdventureUI = React.memo(({
             {isLoading && <LoadingDisplay genre={genre} emoji={activeEmoji} />}
 
             {/* STARS BG */}
-            <div className="absolute inset-0 pointer-events-none">
-                {stars.map((star) => (
-                    <div
-                        key={star.id}
-                        className="absolute text-yellow-200 animate-twinkle"
-                        style={{
-                            top: star.top,
-                            left: star.left,
-                            animationDelay: star.animationDelay,
-                            fontSize: star.fontSize
-                        }}
-                    >
-                        ✦
-                    </div>
-                ))}
-            </div>
+            <StarBackground />
 
             {/* CHAPTER TITLE OVERLAY */}
             {showChapterTitle && (
