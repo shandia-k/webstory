@@ -15,6 +15,7 @@ import { WORLD_THEMES } from '../../constants/worldThemes';
 import { GAME_PHASES } from '../../constants/enums';
 import MissionLog from './game/MissionLog';
 import RiggingStudio from './tools/RiggingStudio';
+import IntroCutscene from './intro/IntroCutscene';
 
 const OmniHub: React.FC = () => {
     // --- GLOBAL STATE VIA CONTEXT ---
@@ -65,6 +66,17 @@ const OmniHub: React.FC = () => {
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
+
+    // --- INTRO CUTSCENE STATE ---
+    const [showIntro, setShowIntro] = useState(() => {
+        const hasPlayed = localStorage.getItem('played_intro');
+        return hasPlayed !== 'true';
+    });
+
+    const handleIntroComplete = () => {
+        setShowIntro(false);
+        localStorage.setItem('played_intro', 'true');
+    };
 
     // --- PHASE TRANSITIONS ---
     const handleExplore = (currentStats: { happiness: number; energy: number; hunger: number }, intent: string = 'scavenge') => {
@@ -229,8 +241,13 @@ const OmniHub: React.FC = () => {
                 style={{ backgroundImage: currentTheme.bgPattern, backgroundSize: currentTheme.bgSize }}>
             </div>
 
+            {/* --- CORE LAYER: INTRO CUTSCENE --- */}
+            {showIntro && (
+                <IntroCutscene onComplete={handleIntroComplete} />
+            )}
+
             {/* --- MAIN CONTENT LAYER --- */}
-            <div className="relative z-10 w-full h-full flex justify-center items-center">
+            <div className={`relative z-10 w-full h-full flex justify-center items-center transition-opacity duration-1000 ${showIntro ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
 
                 {/* PHASE: HUB */}
                 {phase === GAME_PHASES.HUB && (
