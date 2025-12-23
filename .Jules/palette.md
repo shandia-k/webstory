@@ -1,7 +1,3 @@
-## 2024-05-22 - Modal Accessibility & Focus Management
-**Learning:** Custom modals (not using `<dialog>`) require manual implementation of accessibility features like `role="dialog"`, `aria-modal="true"`, correct labeling, and focus trapping/management. A small delay (`setTimeout`) is often needed to focus elements inside a modal that is being rendered/animated in.
-**Action:** When creating or modifying modals, always check for:
-1. `role="dialog"` and `aria-modal="true"` on the container.
-2. `aria-labelledby` linking to the modal title.
-3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
-4. `useRef` and `useEffect` to focus the primary input field on open.
+## 2024-12-23 - Accessibility in Custom Modals
+**Learning:** Custom modal components (like `SaveLoadModal.jsx`) are often missing standard ARIA attributes (`role="dialog"`, `aria-modal`, `aria-labelledby`) and accessibility labels on icon-only buttons, even when sibling components (like `ApiKeyModal.jsx`) have them implemented correctly.
+**Action:** Always verify `role`, `aria-modal`, `aria-labelledby`, and button labels when touching any modal component. Check sibling components for reference implementation patterns.
