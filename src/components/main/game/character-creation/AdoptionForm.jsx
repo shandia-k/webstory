@@ -73,23 +73,10 @@ const AdoptionForm = ({ onComplete, genre }) => {
         onComplete(finalData);
     };
 
-    // --- STYLES ---
-    const styles = `
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
-        .font-cute { font-family: 'Fredoka', sans-serif; }
-        
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        @keyframes pop { 0% { scale: 0.8; opacity: 0; } 100% { scale: 1; opacity: 1; } }
-        
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .animate-pop { animation: pop 0.5s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
-    `;
-
     // --- LOADING SCREEN ---
     if (loading) {
         return (
             <div className="w-full h-screen bg-pink-50 flex flex-col items-center justify-center font-cute text-pink-400">
-                <style>{styles}</style>
                 <div className="text-6xl animate-bounce mb-4">🥚</div>
                 <p className="tracking-widest font-bold animate-pulse">{uiText.CUTE_UI.LOADING.EGGS}</p>
                 <p className="text-xs text-pink-300 mt-2">{uiText.CUTE_UI.LOADING.CONNECTING}</p>
@@ -101,7 +88,6 @@ const AdoptionForm = ({ onComplete, genre }) => {
 
     return (
         <div className="w-full h-screen md:h-screen bg-gradient-to-b from-blue-50 to-pink-50 font-cute flex items-center justify-center p-0 md:p-4 relative overflow-hidden">
-            <style>{styles}</style>
 
             {/* DECORATION (Desktop only mainly) */}
             <div className="absolute top-10 left-10 text-white/60 animate-float hidden md:block"><Cloud size={80} /></div>
