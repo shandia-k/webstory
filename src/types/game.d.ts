@@ -10,6 +10,8 @@ export interface Stats {
     atk?: number;
     def?: number;
     evolutionStage?: number; // 0 = base, 1 = evolved once, etc.
+    bond?: number; // [NEW] Long-term affection (Trust/Heart)
+    discipline?: number; // [NEW] Obedience/Will (War/Obey)
 }
 
 export interface Item {
@@ -24,13 +26,14 @@ export interface Role {
     stats?: Stats;
     element?: string;
     emoji?: string;
+    theme?: string; // [NEW] visual theme/gradient
 }
 
 export interface Pal {
     id: string;
     name: string;
     emoji: string;
-    element: 'api' | 'air' | 'tumbuhan' | string;
+    element: 'api' | 'air' | 'tumbuhan' | 'electric' | 'dark' | 'light' | 'ice' | 'wind' | string;
     trait?: 'brave' | 'coward' | 'lazy' | 'glutton' | 'proud' | 'playful' | string;
     desc?: string;
     role?: Role;

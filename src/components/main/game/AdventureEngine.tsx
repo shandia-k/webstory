@@ -289,6 +289,12 @@ const AdventureEngine: React.FC<AdventureEngineProps> = ({ palData, onReturn, ge
                 statsAfterCombat.hp = bonuses.maxHp;
             }
 
+            // [NEW] Shared Victory Bonding
+            // +5 Bond for winning a fight
+            // +2 Discipline for combat experience
+            statsAfterCombat.bond = (statsAfterCombat.bond || 0) + 5;
+            statsAfterCombat.discipline = (statsAfterCombat.discipline || 0) + 2;
+
             // [NEW] Sync Pal stats from battle result
             setCurrentStats(statsAfterCombat);
 

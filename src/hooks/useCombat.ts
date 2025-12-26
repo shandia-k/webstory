@@ -67,7 +67,15 @@ export const useCombat = (initialPal: any, initialEnemy: any, onCombatEnd: (win:
         }
         else if (command === 'SCOLD') {
             addLog("💢 You scolded sternly! Pal's ACC UP, MOOD DOWN.");
-            setPal((p: any) => ({ ...p, stats: { ...p.stats, happiness: Math.max(0, p.stats.happiness - 15) } }));
+            // [NEW] Discipline Gain (+Obedience, -Happiness)
+            setPal((p: any) => ({
+                ...p,
+                stats: {
+                    ...p.stats,
+                    happiness: Math.max(0, p.stats.happiness - 15),
+                    discipline: (p.stats.discipline || 0) + 5
+                }
+            }));
             setPhase(COMBAT_PHASES.PAL_ACTION);
         }
         else if (command === 'TREAT') {

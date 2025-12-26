@@ -46,14 +46,38 @@ export const GAME_CONFIG = {
         PLAYFUL: { id: 'playful', name: 'Playful', desc: 'High Energy regen, easily distracted', effects: { energy_regen: 1.2, distract_chance: 0.1 } }
     },
     ELEMENTS: {
+        // [MODIFIED] Now using Arrays for multiple advantages
         CYCLE: {
-            api: 'tumbuhan',      // Fire beats Plant
-            tumbuhan: 'air',      // Plant beats Water
-            air: 'api'            // Water beats Fire
+            // FIRE > Plant, Ice, Wind (Basic RPG logic)
+            api: ['tumbuhan', 'plant', 'ice', 'wind', 'ice'],
+            fire: ['tumbuhan', 'plant', 'ice', 'wind', 'ice'],
+
+            // WATER > Fire, Earth
+            air: ['api', 'fire'],
+            water: ['api', 'fire'],
+
+            // PLANT > Water, Electric (Ground logic)
+            tumbuhan: ['air', 'water', 'electric', 'light'],
+            plant: ['air', 'water', 'electric', 'light'],
+
+            // ELECTRIC > Water, Wind
+            electric: ['air', 'water', 'wind', 'flying'],
+
+            // ICE > Plant, Wind
+            ice: ['tumbuhan', 'plant', 'wind', 'flying'],
+
+            // WIND > Plant (Blows away)
+            wind: ['tumbuhan', 'plant'],
+
+            // DARK > Light (Eclipse)
+            dark: ['light', 'holy'],
+
+            // LIGHT > Dark (Purify)
+            light: ['dark', 'shadow']
         },
         MULTIPLIERS: {
-            STRONG: 1.2, // Nerfed from 1.5 to reduce one-shot mechanics
-            WEAK: 0.8,   // Buffed from 0.75 to be less punishing
+            STRONG: 1.5, // Buffed back to 1.5 for "Tactical Satisfaction"
+            WEAK: 0.7,
             NEUTRAL: 1.0
         }
     },

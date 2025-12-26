@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Zap, Crown } from 'lucide-react';
 import { useGame } from '../../../../context/GameContext';
-import { generateEvolution } from '../../../../services/llmService';
 import { Pal } from '../../../../types/game';
+import { getPotentialEvolution } from '../../../../game-mechanics/EvolutionManager';
+import { calculateArchetype } from '../../../../game-mechanics/PersonalitySystem';
 
 interface EvolutionModalProps {
     isOpen: boolean;
@@ -33,9 +34,23 @@ export const EvolutionModal: React.FC<EvolutionModalProps> = ({ isOpen, onClose,
         try {
             // Artificial delay for suspense
             await new Promise(r => setTimeout(r, 2000));
+
+            // [NEW] Deterministic Logic
+            // 1. Calculate Personality
             // @ts-ignore
-            const data = await generateEvolution(apiKey, palData, language);
-            setResult(data);
+            const bond = palData.role?.stats?.bond || 0;
+            // @ts-ignore
+            const discipline = palData.role?.stats?.discipline || 0;
+            const archetype = calculateArchetype(bond, discipline).archetype;
+
+            // 2. Get Branch
+            const branch = getPotentialEvolution(archetype);
+
+            setResult({
+                name: branch.name,
+                emoji: branch.emoji,
+                desc: branch.description
+            });
             setPhase('revealed');
         } catch (e) {
             console.error(e);

@@ -4,8 +4,10 @@ import TabGuard from './components/common/TabGuard';
 
 export default function App() {
     return (
-        <TabGuard>
-            <OmniHub />
-        </TabGuard>
+        <div className="paper-grain min-h-screen">
+            <TabGuard>
+                <OmniHub />
+            </TabGuard>
+        </div>
     );
 }

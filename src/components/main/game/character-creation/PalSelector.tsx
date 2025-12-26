@@ -24,6 +24,20 @@ const PalSelector: React.FC<PalSelectorProps> = ({
     // Ideally parent ensures it's not null when this component is rendered.
     const currentPal = palsData && palsData[selectedPal] ? palsData[selectedPal] : (palsData?.[0] || null);
 
+    // Helper for Element Icons
+    const getElementIcon = (element?: string) => {
+        const el = element?.toLowerCase() || 'neutral';
+        if (['api', 'fire'].includes(el)) return '🔥';
+        if (['air', 'water'].includes(el)) return '💧';
+        if (['tumbuhan', 'plant', 'grass', 'nature'].includes(el)) return '🌿';
+        if (['electric', 'lightning', 'spark'].includes(el)) return '⚡';
+        if (['dark', 'ghost', 'shadow', 'void'].includes(el)) return '🌚';
+        if (['light', 'holy', 'sun'].includes(el)) return '✨';
+        if (['ice', 'snow', 'frost'].includes(el)) return '❄️';
+        if (['wind', 'flying'].includes(el)) return '☁️';
+        return '🥚'; // Neutral/Unknown
+    };
+
     if (!currentPal || !palsData) return null;
 
     return (
@@ -33,8 +47,8 @@ const PalSelector: React.FC<PalSelectorProps> = ({
                     <h2 className="text-2xl md:text-3xl font-black text-purple-600 leading-none">
                         <FitText maxFontSize={32}>{currentPal.name}</FitText>
                     </h2>
-                    <span className="text-2xl filter drop-shadow-sm" title={currentPal.element || "api"}>
-                        {currentPal.element === 'air' ? '💧' : currentPal.element === 'tumbuhan' ? '🌿' : '🔥'}
+                    <span className="text-2xl filter drop-shadow-sm" title={currentPal.element || "Unknown"}>
+                        {getElementIcon(currentPal.element)}
                     </span>
                     {currentPal.trait && (
                         <span className="hidden md:inline-block text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full uppercase tracking-tighter font-black">

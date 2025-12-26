@@ -61,6 +61,10 @@ const TEXT_UI_EN = {
         BTN_ABORT: "ABORT MISSION"
     },
     CUTE_UI: {
+        INVENTORY: {
+            TITLE: "Inventory",
+            EMPTY: "Your backpack is empty!"
+        },
         ACTIONS: {
             FEED: "Feed",
             PLAY: "Play",
@@ -166,6 +170,10 @@ const TEXT_UI_ID = {
         BTN_ABORT: "BATALKAN MISI"
     },
     CUTE_UI: {
+        INVENTORY: {
+            TITLE: "Inventaris",
+            EMPTY: "Tasmu kosong!"
+        },
         ACTIONS: {
             FEED: "Makan",
             PLAY: "Main",

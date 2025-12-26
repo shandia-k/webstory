@@ -42,9 +42,10 @@ const SKILL_DB: Skill[] = [
  * Get all available skills for a Pal based on element and level.
  */
 export const getPalSkills = (element: string, level: number): Skill[] => {
+    const safeElement = (typeof element === 'string' ? element : 'neutral').toLowerCase();
     return SKILL_DB.filter(skill => {
         // Match Element OR Neutral (Everyone gets neutral)
-        const elementMatch = skill.element === 'neutral' || skill.element === element.toLowerCase();
+        const elementMatch = skill.element === 'neutral' || skill.element === safeElement;
         // Match Level
         const levelMatch = skill.minLevel <= level;
         return elementMatch && levelMatch;

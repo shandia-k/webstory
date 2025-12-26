@@ -96,8 +96,17 @@ export const calculateMasterDamage = (attackerStats, defenderStats, command, bas
  */
 export const getElementLabel = (atkEl, defEl) => {
     const { CYCLE } = GAME_CONFIG.ELEMENTS;
-    if (CYCLE[atkEl] === defEl) return "🔥 SUPER EFFECTIVE!";
-    if (CYCLE[defEl] === atkEl) return "❄️ RESISTED...";
+    const weaknesses = CYCLE[atkEl?.toLowerCase()] || CYCLE[atkEl]; // Handle case
+    const strengths = CYCLE[defEl?.toLowerCase()] || CYCLE[defEl];
+
+    // Check if Atk is Super Effective against Def
+    if (Array.isArray(weaknesses) ? weaknesses.includes(defEl) : weaknesses === defEl) {
+        return "🔥 SUPER EFFECTIVE!";
+    }
+    // Check if Def Resists Atk (meaning Def is strong against Atk)
+    if (Array.isArray(strengths) ? strengths.includes(atkEl) : strengths === atkEl) {
+        return "❄️ RESISTED...";
+    }
     return "";
 };
 
@@ -114,12 +123,17 @@ export const calculateDamage = (atkEl, defEl, raw) => {
     let multiplier = MULTIPLIERS.NEUTRAL;
     let label = "";
 
-    if (CYCLE[atkEl] === defEl) {
-        multiplier = MULTIPLIERS.STRONG;
-        label = "🔥 SUPER EFFECTIVE!";
-    } else if (CYCLE[defEl] === atkEl) {
-        multiplier = MULTIPLIERS.WEAK;
-        label = "❄️ NOT EFFECTIVE...";
+    if (atkEl && defEl) {
+        const weaknesses = CYCLE[atkEl.toLowerCase()] || CYCLE[atkEl];
+        const strengths = CYCLE[defEl.toLowerCase()] || CYCLE[defEl];
+
+        if (Array.isArray(weaknesses) ? weaknesses.includes(defEl) : weaknesses === defEl) {
+            multiplier = MULTIPLIERS.STRONG;
+            label = "🔥 SUPER EFFECTIVE!";
+        } else if (Array.isArray(strengths) ? strengths.includes(atkEl) : strengths === atkEl) {
+            multiplier = MULTIPLIERS.WEAK;
+            label = "❄️ NOT EFFECTIVE...";
+        }
     }
 
     const finalDamage = Math.floor(raw * multiplier);

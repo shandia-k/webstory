@@ -2,9 +2,10 @@ import { GoogleGenerativeAI, GenerativeModel, EnhancedGenerateContentResponse } 
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { TRANSLATIONS } from "../constants/textUI";
 import {
-    SetupResponse, ChatResponse, AdventureResponse, VisionResponse
+    SetupResponse, ChatResponse, AdventureResponse, VisionResponse, VisualResponse
 } from '../types/api';
 import { Pal, Campaign, Stats } from '../types/game';
+import { PROMPTS } from '../constants/prompts';
 
 const getUiText = (lang: string) => {
     // @ts-ignore - Index signature
@@ -184,49 +185,7 @@ export const generateGameSetup = async (apiKey: string, genre: string, language:
         throw new Error("API Key missing. Please configure in Settings.");
     }
 
-    const prompt = `
-    ${SYSTEM_PROMPT}
-
-    ## TASK: GENERATE ADOPTION CANDIDATES (PALS)
-    Context: ${genre} (Create candidates that fit this specific theme/world)
-    Language: ${language}
-
-    ## OUTPUT FORMAT (STRICT JSON)
-    {
-        "intro_narrative": "A short, cute message welcoming the player to the adoption center of this world.",
-        "candidates": [
-            {
-                "id": "pal_1",
-                "name": "Creative Name",
-                "emoji": "🐱", // STRICT: Single emoji character only
-                "element": "api", // api / air / tumbuhan
-                "trait": "brave", // brave / coward / lazy / glutton / proud / playful
-                "desc": "A short, cute personality description.",
-                "stats": { "happiness": 80, "energy": 60, "hunger": 50 },
-                "items": [
-                    { 
-                        "name": "Item Name", 
-                        "icon": "🧶", 
-                        "desc": "Short item description"
-                    }
-                ],
-                "suggested_names": ["Name1", "Name2", "Name3", "Name4", "Name5"]
-            }
-        ]
-    }
-    
-    ## RULES
-    1. Provide exactly 3 distinct candidates.
-    2. **ELEMENTS**: You MUST provide 1 "api" (Fire), 1 "tumbuhan" (Plant), and 1 "air" (Water) Pal.
-    3. **TRAITS**: Assign one of these traits to each candidate: "brave", "coward", "lazy", "glutton", "proud", "playful".
-    4. **THEME MATCHING**: If the genre is "Horror", make them cute spooky ghosts/bats. If "SciFi", make them cute robots/aliens.
-    5. **STATS**:
-       - happiness: 0-100 (Higher is better)
-       - energy: 0-100 (Higher is better)
-       - hunger: 0-100 (Lower is better, or Higher = more hungry? Let's say 0-100 fill level, so Higher is fuller/better) -> actually let's stick to user Mock: "hunger: 50". Let's assume 0-100 scale.
-    4. **ITEMS**: Give each pal 2 starting items fitting their theme.
-    5. **NAMES**: Provide 5 creative, cute, or thematic potential names for EACH candidate in "suggested_names".
-    `;
+    const prompt = PROMPTS.GAME_SETUP(genre, language);
 
     try {
         console.log("Generating Setup with prompt:", prompt);
@@ -253,20 +212,7 @@ export const translateUiSubset = async (apiKey: string, targetLanguage: string, 
     if (!apiKey) throw new Error("API Key Missing");
 
     try {
-        const prompt = `
-You are a professional translator for a Role - Playing Game(RPG) UI.
-Translate the following JSON object values into this language: "${targetLanguage}".
-Do NOT translate keys.Keep the structure exactly the same.
-Maintain a professional, immersive gaming tone.
-
-IMPORTANT RULES:
-    1. Use FORMAL, STANDARD language only.
-2. STRICTLY FORBID slang, informal, or "gaul" language.
-3. If the requested language is a slang variant(e.g., "Bahasa Gaul", "Slang"), translate it to the STANDARD FORMAL version of that language(e.g., standard Indonesian).
-
-Source JSON:
-${JSON.stringify(uiSubset, null, 2)}
-    `;
+        const prompt = PROMPTS.UI_TRANSLATE(targetLanguage, uiSubset);
 
         const { result } = await generateWithFallback(apiKey, prompt);
         const response = await result.response;
@@ -293,22 +239,7 @@ export const generatePalChat = async (apiKey: string, palData: Pal, userMessage:
     try {
         const recentHistory = history.slice(-5).map(h => `${h.role === 'user' ? 'Human' : palData.name}: ${h.text} `).join('\n');
 
-        const prompt = `
-## ROLE
-You are ${palData.name}, a virtual pet / companion in a ${genre} world.
-Description: "${palData.role?.desc || 'A cute magical creature'}".
-Stats: Happiness ${palData.role?.stats?.happiness}%, Energy ${palData.role?.stats?.energy}%, Hunger ${palData.role?.stats?.hunger}%.
-
-## CONTEXT
-Chatting with owner.Keep it SHORT, CUTE, EXPRESSIVE.Max 2 sentences.Use emojis suitable for your character.
-
-## HISTORY
-${recentHistory}
-Human: ${userMessage}
-
-## OUTPUT FORMAT(JSON)
-{ "text": "Response text", "emoji": "Statement emoji" }
-`;
+        const prompt = PROMPTS.PAL_CHAT(palData.name, palData.role?.desc || 'A cute magical creature', palData.role?.stats, genre, recentHistory, userMessage);
 
         console.log("Generating Chat with prompt:", prompt);
         saveDebugLog("CHAT_REQUEST", { prompt }, prompt);
@@ -338,26 +269,7 @@ Human: ${userMessage}
 export const generateCampaignStart = async (apiKey: string, genre: string, palInfo: { name: string, role: any }, language: string): Promise<Campaign> => {
     if (!apiKey) throw new Error("API Key Missing");
 
-    const prompt = `
-    ## ROLE
-    Game Master for a ${genre} RPG.
-    Player: "${palInfo.name}" (${palInfo.role.name || 'Hero'}).
-    Description: ${palInfo.role.desc || 'A brave adventurer'}.
-    
-    ## TASK
-    Initialize a new Campaign for this character.
-    Language: ${language}
-    
-    ## OUTPUT JSON
-    {
-        "title": "Epic Title of the Campaign",
-        "mainGoal": "The ultimate objective (e.g., Defeat the Demon King, Find the Lost City)",
-        "antagonist": "Name/Title of the main villain or force",
-        "historySummary": ["Chapter 1: The Journey Begins. ${palInfo.name} enters the world..."],
-        "currentChapter": 1,
-        "isActive": true
-    }
-    `;
+    const prompt = PROMPTS.CAMPAIGN_START(genre, palInfo.name, palInfo.role.name, palInfo.role.desc, language);
 
     try {
         console.log("Generating Campaign Start...");
@@ -467,83 +379,8 @@ export const generateAdventure = async (apiKey: string, palData: Pal, genre: str
         else if (level < 30) powerTier = "Intermediate (Capable)";
         else powerTier = "Master (A Force of Nature)";
 
-        const prompt = `
-    ## ROLE
-    Gamemaster for a "Cute ${genre}" RPG.
-    Player Character: ${palData.name} (${palData.role?.desc || 'Hero'}).
-    Personality Trait: ${palData.trait || (palData as any).role?.trait || 'None'}
-    
-    ${intentBlock}
-
-    ## PLAYER STATS
-    - Level: ${level} (${powerTier})
-    - Health: ${currentHp}/${maxHp}
-    
-    ${contextBlock}
-    
-    ## LANGUAGE
-    ${language} (Output MUST be in this language)
-
-## TASK
-Generate a **linear mini-adventure** with 5 to 7 scenes.
-Format: JSON.
-
-## STORY ARC
-1. **Introduction**: Arrival / Setting the scene.
-2. **Middle Scenes**: Exploration, Encounter, or Challenge (Tag as "conflict" if it involves an entity).
-3. **Conclusion**: Reward and ending.
-
-## JSON STRUCTURE
-{
-  "sector": "Creative Location Name",
-  "theme_color": "Tailwind gradient classes",
-  "enemy": {
-      "name": "Potential Enemy Name",
-      "emoji": "👹", 
-      "element": "api", // api / air / tumbuhan
-      "intro": "A wild Enemy appears!"
-  },
-  "scenes": [
-    {
-      "type": "normal",
-      "text": "Story text...",
-      "visual": "🏰",
-      "choices": [
-        { "label": "Action 1", "effect": { "hp": -5, "loot": 10 } },
-        { "label": "Action 2", "effect": { "happiness": 10 } }
-      ]
-    },
-    {
-      "type": "ending",
-      "text": "The adventure ends heroically.",
-      "visual": "🎉",
-      "choices": [
-        { "label": "Return Home", "isReturn": true, "effect": { "loot": 20 } },
-        { "label": "Rest a bit", "isReturn": true, "effect": { "hp": 20 } }
-      ]
-    }
-  ]
-}
-
-    ## NARRATIVE RULES
-    - **CHOICE DENSITY**: Provide 1 to 3 distinct choices for every scene, depending on the narrative context. Some situations might only allow one path, while others offer more.
-    - **CONCISENESS**: MAX 180 characters per scene. Use more scenes instead of long paragraphs.
-    - **WORLD THEME**: Use vocabulary strictly fitting the "${genre}" genre. 
-      - If SciFi: Use terms like 'hologram', 'neon', 'circuits', 'orbit'.
-      - If Fantasy: Use terms like 'enchanted', 'scrolls', 'tapestry', 'realm'.
-    - **SHOW, DON'T TELL**: Use sensory details. Instead of "It is scary", use "The shadows stretch like long fingers...".
-    - **PERSONALITY FOCUS**: Choices should reflect the Pal's trait ("${palData.trait || 'None'}"). 
-      - A "Lazy" pal might have a choice to "Nap under the tree" (+5 Energy).
-      - A "Brave" pal might have a choice to "Charge blindly" (-10 HP, +20 Loot).
-    - **SCALING**: Create an enemy appropriate for the player's level. 
-    - Use <b>Result</b> or <i>Action</i> tags for emphasis in story text.
-    - **CAMPAIGN UPDATE**: If the 'pacingInstruction' above requires a major plot step (e.g., Boss Defeated, Climax), you MUST include:
-      "campaignUpdate": { "advanceChapter": true, "historyEntry": "Summary of what happened." }
-      Otherwise, omit it.
-
-- "enemy" object is REQUIRED.
-- Last scene MUST have a choice with \"isReturn\": true.
-`;
+        const palElement = (palData as any).role?.element || palData.element || 'neutral';
+        const prompt = PROMPTS.ADVENTURE_GEN(genre, palData.name, palData.role?.desc || 'Hero', palData.trait || (palData as any).role?.trait || 'None', palElement, intentBlock, level, powerTier, currentHp, maxHp, contextBlock, language);
 
         console.log("Generating Adventure with prompt:", prompt);
         saveDebugLog("ADVENTURE_REQUEST", { prompt }, prompt);
@@ -576,31 +413,7 @@ Format: JSON.
 export const generateEvolution = async (apiKey: string, palData: Pal, language: string): Promise<{ name: string, emoji: string, desc: string }> => {
     if (!apiKey) throw new Error("API Key Missing");
 
-    const prompt = `
-    ## ROLE
-    Creature Evolution Expert for a Fantasy RPG.
-    Subject: "${palData.name}" (Level 10+).
-    Original Form: ${palData.role?.desc || palData.desc}.
-    Element: ${palData.element}.
-    Trait: ${palData.trait}.
-    Language: ${language}.
-
-    ## TASK
-    The subject is evolving into a stronger, more mature form.
-    Generate a new persistent identity for this creature.
-
-    ## RULES
-    1. **Name**: Must be related to "${palData.name}" but sound more legendary/adult (e.g., "Ember" -> "Inferno").
-    2. **Emoji**: Choose a DIFFERENT, more substantial emoji (e.g., 🐣 -> 🦅, 🐟 -> 🐋).
-    3. **Description**: Describe its new power and appearance in 1-2 sentences.
-
-    ## OUTPUT JSON
-    {
-        "name": "New Name",
-        "emoji": "🐍",
-        "desc": "New Description..."
-    }
-    `;
+    const prompt = PROMPTS.EVOLUTION_GEN(palData.name, palData.role?.desc || palData.desc || '', palData.element, palData.trait || '', language);
 
     try {
         console.log("Generating Evolution...");
@@ -630,30 +443,7 @@ export const generateEvolution = async (apiKey: string, palData: Pal, language: 
 export const analyzeImagePoints = async (apiKey: string, base64Image: string, promptText: string | null = null): Promise<VisionResponse> => {
     if (!apiKey) throw new Error("API Key Missing");
 
-    const defaultPrompt = `
-    Analyze this 2D character sprite sheet. 
-    It has a GRID overlay. Identify the specific PIVOT POINTS (Joints) for animation.
-    
-    Return a JSON object with "parts" containing [x, y] coordinates (0-1000 scale relative to image size).
-    
-    REQUIRED PARTS:
-    - head (Bottom Center / Neck)
-    - torso (Center)
-    - arm_L_upper (Top Center / Shoulder)
-    - arm_R_upper (Top Center / Shoulder)
-    - leg_L (Top Center / Hip)
-    - leg_R (Top Center / Hip)
-    
-    MOUNTING POINTS (On Torso body):
-    - torso_neck (Where head attaches)
-    - torso_shoulder_L (Where Left Arm attaches)
-    - torso_shoulder_R (Where Right Arm attaches)
-    - torso_hip_L (Where Left Leg attaches)
-    - torso_hip_R (Where Right Leg attaches)
-    
-    OUTPUT JSON ONLY:
-    { "parts": { "head": [x, y], "torso_neck": [x, y], ... } }
-    `;
+    const defaultPrompt = PROMPTS.VISION_ANALYSIS;
 
     try {
         const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
@@ -675,6 +465,7 @@ export const analyzeImagePoints = async (apiKey: string, base64Image: string, pr
         const text = response.text();
 
         const jsonMatch = text.match(/\{[\s\S]*\}/);
+
         if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             saveDebugLog("VISION_SUCCESS", parsed, "Vision Analysis", model);
@@ -686,5 +477,43 @@ export const analyzeImagePoints = async (apiKey: string, base64Image: string, pr
         console.error("Vision API Error:", error);
         saveDebugLog("VISION_ERROR", { error: error.message });
         throw error;
+    }
+};
+
+export const generateVisualDirection = async (apiKey: string, context: string): Promise<VisualResponse> => {
+    if (!apiKey) throw new Error("API Key Missing");
+
+    const prompt = PROMPTS.VISUAL_DIRECTION(context);
+
+    try {
+        console.log("Generating Visual Direction...");
+        saveDebugLog("VISUAL_DIR_REQ", { prompt }, context);
+
+        const { result, model } = await generateWithFallback(apiKey, prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        // Extract JSON
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            saveDebugLog("VISUAL_DIR_SUCCESS", parsed, context, model);
+            return parsed;
+        }
+        throw new Error("Invalid Visual JSON");
+    } catch (e: any) {
+        console.error("Visual Dir Error:", e);
+        // Fallback for visual continuity
+        return {
+            paper_texture: "clean",
+            lighting: "flat",
+            palette: {
+                bg: "#18181b",
+                panel: "#27272a",
+                accent: "#4f46e5",
+                text: "#e4e4e7"
+            },
+            filter: "none"
+        };
     }
 };

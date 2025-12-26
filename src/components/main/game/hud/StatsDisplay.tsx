@@ -71,10 +71,13 @@ interface StatsDisplayProps {
     atk: number;
     def: number;
     skills: any[];
+    // [NEW] Personality Stats (Optional)
+    bond?: number;
+    discipline?: number;
     uiText: any;
 }
 
-const StatsDisplay: React.FC<StatsDisplayProps> = ({ happiness, energy, hunger, hp, maxHp, atk, def, skills, uiText }) => {
+const StatsDisplay: React.FC<StatsDisplayProps> = ({ happiness, energy, hunger, hp, maxHp, atk, def, skills, bond = 0, discipline = 0, uiText }) => {
     const hpPercent = (hp / maxHp) * 100;
     const hpColor = hpPercent <= 25 ? "text-red-500" : "text-green-500";
     const hpBarColor = hpPercent <= 25 ? "bg-red-500" : "bg-green-500";
@@ -109,6 +112,19 @@ const StatsDisplay: React.FC<StatsDisplayProps> = ({ happiness, energy, hunger, 
                             <div className={`h-full ${hpBarColor}`} style={{ width: `${hpPercent}%` }} />
                         </div>
                     </div>
+                    {/* [NEW] Personality Stat 1: BOND */}
+                    <div className="bg-white/40 p-1 md:p-2 rounded-xl border border-white/50 flex flex-col items-center justify-center">
+                        <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase">Bond</span>
+                        <span className="text-xs md:text-sm font-bold text-pink-500">❤️ {bond}</span>
+                    </div>
+                    {/* [NEW] Personality Stat 2: DISCIPLINE */}
+                    <div className="bg-white/40 p-1 md:p-2 rounded-xl border border-white/50 flex flex-col items-center justify-center">
+                        <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase">Will</span>
+                        <span className="text-xs md:text-sm font-bold text-blue-600">⚜️ {discipline}</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 md:gap-2 mt-2">
                     <div className="bg-white/40 p-1 md:p-2 rounded-xl border border-white/50 flex flex-col items-center justify-center">
                         <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase">ATK</span>
                         <span className="text-xs md:text-sm font-bold text-indigo-500">{atk}</span>

@@ -22,13 +22,18 @@ export const useRiggingStudio = () => {
     const [tool, setTool] = useState('add'); // 'add', 'move', 'rotate', 'magic'
     const [scale, setScale] = useState(1);
     const [tolerance, setTolerance] = useState(50); // Color tolerance for magic wand
+    const [sensitivity, setSensitivity] = useState(50); // Sensitivity for Green Screen (Sat/Light)
 
     // Workflow State
+    const [studioMode, setStudioMode] = useState<'rigging' | 'workshop'>('rigging');
     const [workflowStage, setWorkflowStage] = useState('upload'); // 'upload' | 'tagging' | 'assembled'
     const [pivotData, setPivotData] = useState(null); // RAW Gemini Data
 
     // Assembly State
     const [isAssembled, setIsAssembled] = useState(false); // Legacy flag for UI compat
+
+    // Workshop / Asset State
+    const [workshopParts, setWorkshopParts] = useState([]); // { id, dataUrl, name, bbox }
 
     // Drag State
     const [isDragging, setIsDragging] = useState(false);
@@ -75,7 +80,48 @@ export const useRiggingStudio = () => {
 
     const runPipelineSteps = async (inputImageElement) => {
         const sourceUrl = inputImageElement ? inputImageElement.src : image;
+
+        // FIX: Ensure original image is saved to state so Re-Scan works
+        if (inputImageElement) {
+            setImage(inputImageElement.src);
+        }
+
         if (!sourceUrl) return;
+
+        // --- WORKSHOP MODE: Simple Island Detection ---
+        if (studioMode === 'workshop') {
+            setIsProcessing(true);
+            setStatusMsg("Workshop: Detecting Islands...");
+
+            // Wait a bit for UI to show status
+            setTimeout(() => {
+                try {
+                    // Pass dynamic Tolerance/Sensitivity
+                    const result = processAutoRigging(inputImageElement, {
+                        tolerance: tolerance,
+                        sensitivity: sensitivity
+                    });
+
+                    // FIX: Keep original image for Re-Scan/Reset capability
+                    // setImage(result.originalClean); 
+
+                    setWorkshopParts(result.parts.map(p => ({
+                        ...p,
+                        name: p.id // default name
+                    })));
+                    setWorkflowStage('tagging');
+                    setIsProcessing(false);
+                    setStatusMsg("");
+                } catch (err) {
+                    console.error("Workshop Error:", err);
+                    alert("Workshop Detection Failed");
+                    setIsProcessing(false);
+                }
+            }, 500);
+            return;
+        }
+
+        // --- RIGGING MODE: Gemini AI Pipeline ---
         if (!apiKey) {
             alert("API Key required for Smart Auto-Rig!");
             return;
@@ -117,11 +163,20 @@ export const useRiggingStudio = () => {
         }
     };
 
-    // User corrects tags here
+    // User corrects tags here (Legacy Scan)
     const handlePartRename = (partIndex, newId) => {
         const newSlices = [...slices];
         newSlices[partIndex].id = newId;
         setSlices(newSlices);
+    };
+
+    // [NEW] User renames assets in Workshop Mode
+    const handleWorkshopRename = (index, newName) => {
+        setWorkshopParts(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], name: newName };
+            return next;
+        });
     };
 
     // User clicks "Finalize / Assemble"
@@ -159,6 +214,13 @@ export const useRiggingStudio = () => {
     const handleAutoRig = () => {
         const img = new Image();
         img.src = image;
+        img.onload = () => runPipelineSteps(img);
+    };
+
+    const handleReProcess = () => {
+        if (!image) return;
+        const img = new Image();
+        img.src = image; // This works if image is a DataURL or blob
         img.onload = () => runPipelineSteps(img);
     };
 
@@ -288,6 +350,59 @@ export const useRiggingStudio = () => {
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
+    };
+
+    const handleDownloadAsset = async (part) => {
+        const fileName = (part.name || part.id).toLowerCase().endsWith('.png')
+            ? (part.name || part.id)
+            : `${part.name || part.id}.png`;
+
+        try {
+            // Priority 1: File System Access API (Modern Browsers) - Forces "Save As"
+            if ('showSaveFilePicker' in window) {
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'PNG Image',
+                        accept: { 'image/png': ['.png'] },
+                    }],
+                });
+
+                const writable = await handle.createWritable();
+
+                // Convert Base64 to Blob
+                const response = await fetch(part.dataUrl);
+                const blob = await response.blob();
+
+                await writable.write(blob);
+                await writable.close();
+                return;
+            }
+
+            // Priority 2: Standard Download (Fallback)
+            const link = document.createElement('a');
+            link.href = part.dataUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => document.body.removeChild(link), 100);
+
+        } catch (error) {
+            // If user cancels picker, it throws an error. Ignore it.
+            if (error.name !== 'AbortError') {
+                console.error("Download failed:", error);
+                alert("Download failed. Please try again.");
+            }
+        }
+    };
+
+    const handleDownloadAllWorkshop = () => {
+        workshopParts.forEach((part, index) => {
+            // Sequential download might be blocked by browser, but usually 
+            // small batches are fine. Better to use a delay or Zip.
+            // For now, let's just do individual prompts or a Zip if JSZip is here.
+            setTimeout(() => handleDownloadAsset(part), index * 200);
+        });
     };
 
     const handleCopyData = async () => {
@@ -487,6 +602,7 @@ export const useRiggingStudio = () => {
             tool,
             scale,
             tolerance,
+            sensitivity,
             isProcessing,
             statusMsg,
             isPlaying,
@@ -494,7 +610,9 @@ export const useRiggingStudio = () => {
             isAssembled,
             slices, // Export slices for rendering sprites
             workflowStage,
-            pivotData
+            pivotData,
+            studioMode,
+            workshopParts
         },
         actions: {
             setImage,
@@ -503,6 +621,9 @@ export const useRiggingStudio = () => {
             setTool,
             setScale,
             setTolerance,
+            setSensitivity,
+            setStudioMode,
+            setWorkshopParts,
             handleImageUpload,
             handleCanvasClick,
             handleDeleteBone,
@@ -510,8 +631,12 @@ export const useRiggingStudio = () => {
             handleAutoRig, // Wrapped
             handleVectorize,
             handleExportRig,
+            handleDownloadAsset,
+            handleDownloadAllWorkshop,
             handleCopyData,
             handlePartRename,
+            handleWorkshopRename,
+            handleReProcess,
             handleFinalizeRig,
             startAnimation,
             stopAnimation,

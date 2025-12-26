@@ -55,3 +55,15 @@ export interface VisionPart {
 export interface VisionResponse {
     parts: VisionPart;
 }
+
+export interface VisualResponse {
+    paper_texture: 'clean' | 'rough' | 'crumpled' | 'cardboard';
+    lighting: 'flat' | 'long-right' | 'long-left' | 'top-down';
+    palette: {
+        bg: string;
+        panel: string;
+        accent: string;
+        text: string;
+    };
+    filter: string;
+}
