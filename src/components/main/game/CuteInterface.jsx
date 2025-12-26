@@ -228,11 +228,17 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             </div>
                             <button
                                 onClick={onOpenSettings}
+                                aria-label="Open Settings"
+                                title="Settings"
                                 className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
                             >
                                 <Settings size={20} />
                             </button>
-                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm">
+                            <button
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
+                                aria-label="Toggle Music"
+                                title="Music"
+                            >
                                 <Music size={20} />
                             </button>
                         </div>
@@ -259,6 +265,8 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             {/* FLOATING FAB */}
             <button
                 onClick={() => setIsChatOpen(true)}
+                aria-label="Open Chat"
+                title="Chat with Pal"
                 className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce"
             >
                 <MessageCircle size={28} className="md:w-10 md:h-10" />
