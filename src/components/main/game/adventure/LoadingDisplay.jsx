@@ -44,9 +44,6 @@ const LoadingDisplay = ({ genre, emoji }) => {
 
             {/* Speed Lines Overlay */}
             <div className="absolute inset-0 z-20 pointer-events-none opacity-20 bg-[repeating-linear-gradient(90deg,transparent,transparent_49%,#fff_50%,transparent_51%)] bg-[length:200%_100%] animate-[slide-left_0.2s_linear_infinite]" />
-            <style>{`
-                @keyframes slide-left { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-            `}</style>
         </div>,
         document.body
     );
