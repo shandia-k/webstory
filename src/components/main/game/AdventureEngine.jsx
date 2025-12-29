@@ -97,7 +97,9 @@ const AdventureEngine = ({ palData, onReturn, genre }) => {
     }, []);
 
     // --- LOGIC HANDLERS ---
-    const handleChoice = (choice) => {
+    // ⚡ Bolt Optimization: Memoize callback passed to AdventureUI.
+    // Prevents massive UI re-renders on minor engine state changes.
+    const handleChoice = useCallback((choice) => {
         // [NEW] Update full stats based on choice effect
         if (choice.effect) {
             const fx = choice.effect;
@@ -120,7 +122,7 @@ const AdventureEngine = ({ palData, onReturn, genre }) => {
                 onReturn({ stats: currentStats, loot });
             }
         }
-    };
+    }, [currentStats, loot, onReturn, currentStep, storyBuffer]);
 
     const startCombat = (enemyData) => {
         // Validate Emoji

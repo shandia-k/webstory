@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Skull, Zap } from 'lucide-react';
 import { SaveLoadModal } from './game/SaveLoadModal';
 import { ApiKeyModal } from './game/ApiKeyModal';
@@ -54,21 +54,27 @@ const OmniHub = () => {
     }, []);
 
     // --- PHASE TRANSITIONS ---
-    const handleExplore = (currentStats) => {
+    // ⚡ Bolt Optimization: Use functional updates to remove 'adoptedPal' dependency.
+    // This prevents 'AdventureEngine' from re-rendering when 'adoptedPal' changes elsewhere,
+    // keeping the callback stable across renders.
+    const handleExplore = useCallback((currentStats) => {
         // Sync stats before adventure
-        if (adoptedPal) {
-            setAdoptedPal(prev => ({
+        setAdoptedPal(prev => {
+            if (!prev) return prev;
+            return {
                 ...prev,
                 role: {
                     ...prev.role,
                     stats: { ...prev.role.stats, ...currentStats }
                 }
-            }));
-        }
+            };
+        });
         setPhase(GAME_PHASES.ADVENTURE);
-    };
+    }, [setAdoptedPal, setPhase]);
 
-    const handleReturnFromAdventure = (results) => {
+    // ⚡ Bolt Optimization: Memoized to prevent AdventureEngine re-initialization.
+    // Reduces re-renders of the entire adventure loop when unrelated Hub state changes.
+    const handleReturnFromAdventure = useCallback((results) => {
         // Results: { hp, loot }
         // Update stats and inventory
         setAdoptedPal(prev => ({
@@ -90,7 +96,7 @@ const OmniHub = () => {
         }
 
         setPhase(GAME_PHASES.GAME);
-    };
+    }, [setAdoptedPal, setWallet, setPhase]);
 
     return (
         <div className={`w-full h-screen bg-gradient-to-b ${currentTheme.colors} transition-colors duration-700 font-cute flex flex-col items-center justify-center relative overflow-hidden text-white`}>
