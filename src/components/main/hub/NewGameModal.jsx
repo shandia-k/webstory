@@ -1,15 +1,42 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
+    const cancelButtonRef = useRef(null);
+
+    // Handle Escape key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (isOpen && e.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
+    // Focus management: Focus cancel button on open
+    useEffect(() => {
+        if (isOpen && cancelButtonRef.current) {
+            cancelButtonRef.current.focus();
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            aria-describedby="modal-desc"
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
+                aria-hidden="true"
             />
 
             {/* Modal Content */}
@@ -24,24 +51,31 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
 
 
                 <div className="p-6 text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-gray-800">
+                    <h3
+                        id="modal-title"
+                        className="text-2xl font-bold text-gray-800"
+                    >
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME_TITLE}
                     </h3>
 
-                    <p className="text-gray-600 leading-relaxed">
+                    <p
+                        id="modal-desc"
+                        className="text-gray-600 leading-relaxed"
+                    >
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME}
                     </p>
 
                     <div className="flex gap-3 pt-4">
                         <button
+                            ref={cancelButtonRef}
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                            className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
                         >
                             {uiText.HUB.BTN_CANCEL}
                         </button>
                         <button
                             onClick={onConfirm}
-                            className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all active:scale-95"
+                            className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:outline-none"
                         >
                             {uiText.HUB.BTN_START}
                         </button>
