@@ -11,7 +11,7 @@ import { getXpToNextLevel } from '../../../game-mechanics/LevelingSystem';
 import StatsDisplay from './hud/StatsDisplay';
 import ActionMenu from './hud/ActionMenu';
 
-const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateStats }) => {
+const CuteInterface = React.memo(function CuteInterface({ palData, onExplore, wallet, onOpenSettings, onUpdateStats }) {
     // --- STATE ---
     const { apiKey, uiText } = useGame();
     const [happiness, setHappiness] = useState(palData?.role?.stats?.happiness || 80);
@@ -48,7 +48,7 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
         if (onUpdateStats) {
             onUpdateStats({ happiness, energy, hunger });
         }
-    }, [happiness, energy, hunger]); // Auto-save trigger upon any change
+    }, [happiness, energy, hunger, onUpdateStats]); // Added onUpdateStats to dependency array
 
     // --- ANIMATION TRIGGERS ---
     const triggerBounce = () => {
@@ -275,6 +275,6 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             />
         </div>
     );
-};
+});
 
 export default CuteInterface;
