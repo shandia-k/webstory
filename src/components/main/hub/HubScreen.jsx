@@ -44,8 +44,10 @@ export const HubScreen = ({
                         {/* Fullscreen Button */}
                         <button
                             onClick={toggleFullscreen}
-                            className="bg-white/30 p-2 md:p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95"
+                            className="bg-white/30 p-2 md:p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-white/80 outline-none"
                             title="Toggle Fullscreen"
+                            aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                            aria-pressed={isFullscreen}
                         >
                             {isFullscreen ? (
                                 <Minimize size={20} className="text-white md:w-6 md:h-6" />
@@ -68,15 +70,17 @@ export const HubScreen = ({
 
                         <button
                             onClick={onOpenApi}
-                            className="bg-white/30 p-2 md:p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 md:hidden"
+                            className="bg-white/30 p-2 md:p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 md:hidden focus-visible:ring-2 focus-visible:ring-white/80 outline-none"
                             title="API Configuration"
+                            aria-label="Configure API Key"
                         >
                             <Key size={20} className="text-white md:w-6 md:h-6" />
                         </button>
 
                         <button
                             onClick={onOpenSaveLoad}
-                            className="bg-white/30 p-2 md:p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 md:hidden"
+                            className="bg-white/30 p-2 md:p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 md:hidden focus-visible:ring-2 focus-visible:ring-white/80 outline-none"
+                            aria-label="Open Save/Load Menu"
                         >
                             <Settings size={20} className="text-white md:w-6 md:h-6" />
                         </button>
@@ -109,16 +113,18 @@ export const HubScreen = ({
                         {/* API KEY BUTTON */}
                         <button
                             onClick={onOpenApi}
-                            className="bg-white/30 p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95"
+                            className="bg-white/30 p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-white/80 outline-none"
                             title="Configure API"
+                            aria-label="Configure API Key"
                         >
                             <Key size={24} className="text-white" />
                         </button>
                         {/* SAVE/LOAD MENU */}
                         <button
                             onClick={onOpenSaveLoad}
-                            className="bg-white/30 p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95"
+                            className="bg-white/30 p-3 rounded-full hover:bg-white/50 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-white/80 outline-none"
                             title="Save/Load Menu"
+                            aria-label="Open Save/Load Menu"
                         >
                             <Settings size={24} className="text-white" />
                         </button>
@@ -134,14 +140,20 @@ export const HubScreen = ({
                         <p className="text-center md:text-left text-xs font-bold uppercase tracking-widest opacity-70 ml-1 shrink-0">{uiText.HUB.SELECT_WORLD}</p>
 
                         {/* Scroll Container */}
-                        <div className="bg-black/10 p-2 md:p-3 rounded-3xl overflow-x-auto hide-scrollbar flex md:grid md:grid-cols-2 gap-3 md:gap-3 w-full snap-x snap-mandatory flex-1 min-h-0 md:overflow-y-auto content-start">
+                        <div
+                            className="bg-black/10 p-2 md:p-3 rounded-3xl overflow-x-auto hide-scrollbar flex md:grid md:grid-cols-2 gap-3 md:gap-3 w-full snap-x snap-mandatory flex-1 min-h-0 md:overflow-y-auto content-start"
+                            role="radiogroup"
+                            aria-label="Select World"
+                        >
 
                             {Object.entries(WORLD_THEMES).map(([key, data]) => (
                                 <button
                                     key={key}
                                     onClick={() => setSelectedWorld(key)}
+                                    aria-checked={selectedWorld === key}
+                                    role="radio"
                                     className={`
-                                    group relative flex-none w-[140px] md:w-full p-3 rounded-2xl flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start gap-2 md:gap-4 transition-all duration-200 snap-center min-h-[80px] h-full
+                                    group relative flex-none w-[140px] md:w-full p-3 rounded-2xl flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start gap-2 md:gap-4 transition-all duration-200 snap-center min-h-[80px] h-full focus-visible:ring-2 focus-visible:ring-white/80 outline-none
                                     ${selectedWorld === key
                                             ? 'bg-white text-gray-800 shadow-xl ring-4 ring-white/50 z-10'
                                             : 'bg-white/10 hover:bg-white/20 text-white/90 hover:scale-[0.98]'}

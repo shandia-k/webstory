@@ -5,11 +5,18 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-game-modal-title"
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
+                aria-hidden="true"
+                tabIndex="-1"
             />
 
             {/* Modal Content */}
@@ -17,14 +24,17 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
                 {/* Header Pattern */}
                 <div className="h-24 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-                    <AlertTriangle size={48} className="text-white drop-shadow-md animate-pulse" />
+                    <AlertTriangle size={48} className="text-white drop-shadow-md animate-pulse" aria-hidden="true" />
                 </div>
 
                 {/* Close Button */}
 
 
                 <div className="p-6 text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-gray-800">
+                    <h3
+                        id="new-game-modal-title"
+                        className="text-2xl font-bold text-gray-800"
+                    >
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME_TITLE}
                     </h3>
 
