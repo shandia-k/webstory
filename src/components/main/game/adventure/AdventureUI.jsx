@@ -9,7 +9,7 @@ import FormattedText from '../../../common/FormattedText';
 import FitText from '../../../common/FitText';
 import './AdventureUI.css';
 
-const AdventureUI = React.memo(({
+const AdventureUI = React.memo(function AdventureUI({
     isLoading,
     genre,
     activeEmoji,
@@ -31,7 +31,7 @@ const AdventureUI = React.memo(({
     onChoice,
     onReturn,
     playerElement
-}) => {
+}) {
     // Memoize star positions to prevent re-calculation on every render
     const stars = useMemo(() => [...Array(20)].map((_, i) => ({
         id: i,

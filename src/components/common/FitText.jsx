@@ -21,7 +21,8 @@ const FitText = ({
     const [scale, setScale] = useState(1);
 
     useEffect(() => {
-        const resize = () => {
+        // Function to update scale based on container/text widths
+        const updateScale = () => {
             if (!containerRef.current || !textRef.current) return;
 
             const containerWidth = containerRef.current.offsetWidth;
@@ -31,27 +32,32 @@ const FitText = ({
                 const newScale = (containerWidth / textWidth) * compression;
                 // Clamp to minFontSize equivalent relative to CURRENT font size
                 // We assume the rendered font size is the 'max' size.
-                // If maxFontSize is provided, it IS the size. If not, it's inherited.
-                // We generally just limit scale to avoid microscopic text if possible, 
-                // but strictly speaking, FitText should just fit.
-                // We'll use a safe lower bound for scale to prevent 0.
                 setScale(Math.max(newScale, 0.1));
             } else {
                 setScale(1);
             }
         };
 
-        // If maxFontSize is changing, we might need to wait for render?
-        // Actually, style update happens in render. resize runs after.
-        // We might need a small delay or useLayoutEffect if we were measuring layout strictly, 
-        // but useEffect is likely fine for this visual adjustment.
-        // To be safe against font loading or layout shifts:
-        const timeoutId = setTimeout(resize, 0);
+        // Run initially to set the correct scale
+        // Using requestAnimationFrame ensures we measure after initial layout
+        const rafId = window.requestAnimationFrame(updateScale);
 
-        window.addEventListener('resize', resize);
+        // Use ResizeObserver to detect container size changes
+        // This is much more efficient than window.addEventListener('resize')
+        // as it only fires when THIS specific element changes size.
+        const observer = new ResizeObserver(() => {
+            // Wrap in rAF to avoid "ResizeObserver loop limit exceeded" errors
+            // if the state update triggers immediate layout changes
+            window.requestAnimationFrame(updateScale);
+        });
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
         return () => {
-            window.removeEventListener('resize', resize);
-            clearTimeout(timeoutId);
+            observer.disconnect();
+            window.cancelAnimationFrame(rafId);
         };
     }, [children, compression, maxFontSize, minFontSize]);
 
