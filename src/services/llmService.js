@@ -566,8 +566,8 @@ Format: JSON.
 - "enemy" object is REQUIRED (The game engine decides if it attacks).
 - "enemy.emoji" MUST be a SINGLE EMOJI.
 - "enemy.element" MUST be one of: "api", "air", "tumbuhan".
-- Do NOT generate \"isCombat\": true choices. The system handles that.
-- Last scene MUST have \"isReturn\": true.
+- Do NOT generate "isCombat": true choices. The system handles that.
+- Last scene MUST have "isReturn": true.
 `;
 
         console.log("Generating Adventure with prompt:", prompt);
