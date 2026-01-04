@@ -5,31 +5,12 @@ const StatPill = ({ icon: Icon, value, color, barColor, label }) => {
     const [animClass, setAnimClass] = useState('');
     const prevValueRef = useRef(value);
 
-    const styles = `
-        @keyframes flow-gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        @keyframes pulse-grow {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); filter: brightness(1.1); }
-            100% { transform: scale(1); }
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
-        }
-        .animate-pulse-grow { animation: pulse-grow 0.4s ease-in-out; }
-        .animate-shake { animation: shake 0.4s ease-in-out; }
-    `;
-
     useEffect(() => {
         if (value > prevValueRef.current) {
             setAnimClass('animate-pulse-grow');
         } else if (value < prevValueRef.current) {
-            setAnimClass('animate-shake');
+            // Using existing shake from index.css or the new simple one
+            setAnimClass('animate-shake-simple');
         }
 
         const timer = setTimeout(() => setAnimClass(''), 400);
@@ -39,7 +20,6 @@ const StatPill = ({ icon: Icon, value, color, barColor, label }) => {
 
     return (
         <div className={`flex flex-col w-full gap-1 transform transition-all duration-300 ${animClass}`}>
-            <style>{styles}</style>
             <div className="flex justify-between text-xs font-bold text-gray-500 px-1">
                 <span className="flex items-center gap-1"><Icon size={12} className={color} /> {label}</span>
                 <span>{value}%</span>
