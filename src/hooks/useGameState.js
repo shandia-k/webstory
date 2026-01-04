@@ -74,7 +74,7 @@ export function useGameState() {
     }, [phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign]);
 
     // EXPORT / IMPORT
-    const saveGame = async () => {
+    const saveGame = useCallback(async () => {
         try {
             const data = {
                 version: GAME_CONFIG.VERSION,
@@ -87,9 +87,9 @@ export function useGameState() {
             console.error("Save Failed", e);
             showNotification('Save Failed', 'error');
         }
-    };
+    }, [phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign, showNotification]);
 
-    const loadGame = async (file) => {
+    const loadGame = useCallback(async (file) => {
         try {
             const data = await parseSaveFile(file);
             if (data.version && data.version.startsWith('OmniHub')) {
@@ -110,7 +110,7 @@ export function useGameState() {
             console.error("Load Failed", e);
             showNotification('Load Failed', 'error');
         }
-    };
+    }, [showNotification]);
 
     // DYNAMIC TRANSLATIONS
     const [customTranslations, setCustomTranslations] = useState({});
@@ -145,7 +145,7 @@ export function useGameState() {
         };
     }, [language, customTranslations]);
 
-    return {
+    const contextValue = useMemo(() => ({
         // State
         phase, setPhase,
         selectedWorld, setSelectedWorld,
@@ -165,7 +165,10 @@ export function useGameState() {
         loadGame,
         // Computed
         uiText
-    };
+    }), [
+        phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign,
+        apiKey, language, notification, showNotification, updateUiText, saveGame, loadGame, uiText
+    ]);
+
+    return contextValue;
 }
-
-
