@@ -58,7 +58,8 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
+                        aria-label="Close chat"
+                        className="p-2 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-pink-300 focus:outline-none"
                     >
                         <X size={20} />
                     </button>
@@ -109,17 +110,19 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                     <div className="flex gap-2">
                         <input
                             type="text"
+                            aria-label="Message input"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Type a message..."
-                            className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 focus:outline-none focus:border-pink-300 focus:bg-white transition-all text-sm md:text-base placeholder:text-gray-400"
+                            className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 focus:outline-none focus:border-pink-300 focus:bg-white transition-all text-sm md:text-base placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-pink-200"
                             autoFocus
                         />
                         <button
                             onClick={handleSend}
+                            aria-label="Send message"
                             disabled={!input.trim() || isTyping}
-                            className="w-12 h-12 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
+                            className="w-12 h-12 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all focus-visible:ring-4 focus-visible:ring-pink-200 focus:outline-none"
                         >
                             <Send size={20} className={input.trim() ? "ml-1" : ""} />
                         </button>

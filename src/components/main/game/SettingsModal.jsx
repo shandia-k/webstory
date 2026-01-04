@@ -102,7 +102,8 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
                 <button
                     onClick={onClose}
-                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2"
+                    aria-label="Close settings"
+                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2 focus-visible:ring-2 focus-visible:ring-gray-400 focus:outline-none"
                     disabled={isTranslating}
                 >
                     <X size={24} />
@@ -181,7 +182,8 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                                 />
                                 <button
                                     onClick={() => setShowKey(!showKey)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 p-2 transition-colors"
+                                    aria-label={showKey ? "Hide API key" : "Show API key"}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 p-2 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-full focus:outline-none"
                                     disabled={isTranslating}
                                 >
                                     {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
