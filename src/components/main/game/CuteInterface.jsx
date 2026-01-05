@@ -179,12 +179,13 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
 
                 {/* LEFT PANEL (VISUALS) */}
                 <div className="flex-1 flex flex-col items-center justify-center relative md:w-5/12 order-2 md:order-1">
-                    <div
-                        className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform ${isBouncing ? 'animate-squish' : 'animate-float'}`}
+                    <button
+                        className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform focus-visible:outline-none focus-visible:scale-110 focus-visible:ring-4 focus-visible:ring-pink-300 rounded-full ${isBouncing ? 'animate-squish' : 'animate-float'}`}
                         onClick={(e) => handleAction('pet', e)}
+                        aria-label="Pet your companion"
                     >
                         {activeEmoji}
-                    </div>
+                    </button>
 
                     <div className="mt-6 bg-white px-6 py-4 rounded-2xl rounded-tr-none shadow-sm border border-pink-50 max-w-[90%] animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
                         <p className="text-center font-bold text-gray-600 leading-relaxed text-sm md:text-xl">
@@ -228,11 +229,15 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             </div>
                             <button
                                 onClick={onOpenSettings}
-                                className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
+                                aria-label="Open Settings"
                             >
                                 <Settings size={20} />
                             </button>
-                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm">
+                            <button
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:outline-none"
+                                aria-label="Toggle Music"
+                            >
                                 <Music size={20} />
                             </button>
                         </div>
@@ -259,7 +264,8 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             {/* FLOATING FAB */}
             <button
                 onClick={() => setIsChatOpen(true)}
-                className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce"
+                className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-300"
+                aria-label="Open Chat"
             >
                 <MessageCircle size={28} className="md:w-10 md:h-10" />
             </button>
