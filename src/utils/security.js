@@ -3,39 +3,52 @@
  */
 
 const REDACTED_LABEL = '[REDACTED]';
+const CIRCULAR_LABEL = '[CIRCULAR]';
 
 /**
  * Recursively sanitizes data to remove sensitive information.
+ * Handles circular references to prevent Stack Overflow.
+ *
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} visited - Internal use for cycle detection
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], visited = new WeakSet()) => {
     if (!data) return data;
-    if (secrets.length === 0) return data;
 
-    // Filter out empty secrets and short strings that might cause false positives
-    const activeSecrets = secrets.filter(s => s && typeof s === 'string' && s.length > 5);
-    if (activeSecrets.length === 0) return data;
+    // Handle primitives immediately
+    if (typeof data !== 'object' && !Array.isArray(data)) {
+        if (typeof data === 'string' && secrets.length > 0) {
+            // Filter out empty secrets and short strings that might cause false positives
+            const activeSecrets = secrets.filter(s => s && typeof s === 'string' && s.length > 5);
+            if (activeSecrets.length === 0) return data;
 
-    if (typeof data === 'string') {
-        let sanitized = data;
-        activeSecrets.forEach(secret => {
-            // Global replace of the secret
-            sanitized = sanitized.split(secret).join(REDACTED_LABEL);
-        });
-        return sanitized;
+            let sanitized = data;
+            activeSecrets.forEach(secret => {
+                // Global replace of the secret
+                sanitized = sanitized.split(secret).join(REDACTED_LABEL);
+            });
+            return sanitized;
+        }
+        return data;
     }
 
+    // Cycle detection for objects and arrays
+    if (visited.has(data)) {
+        return CIRCULAR_LABEL;
+    }
+    visited.add(data);
+
     if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
+        return data.map(item => sanitizeData(item, secrets, visited));
     }
 
     if (typeof data === 'object') {
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], secrets, visited);
             }
         }
         return sanitizedObj;
