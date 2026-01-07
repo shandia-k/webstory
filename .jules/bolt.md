@@ -1,0 +1,3 @@
+## 2024-05-23 - CSS Performance: Inline Styles vs. Stylesheet
+**Learning:** Injecting `<style>` tags with `@import` inside React components causes the browser to re-parse CSS and trigger layout thrashing on every render. This is especially bad for high-frequency updates like animations or game loops.
+**Action:** Move all static styles, fonts, and keyframes to `src/index.css` and use utility classes. This improves render performance and keeps the component code clean. Only use inline `style={{...}}` for truly dynamic values (like coordinates or progress percentages).
