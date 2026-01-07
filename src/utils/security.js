@@ -3,45 +3,68 @@
  */
 
 const REDACTED_LABEL = '[REDACTED]';
+const CIRCULAR_LABEL = '[CIRCULAR]';
 
 /**
  * Recursively sanitizes data to remove sensitive information.
+ * Handles circular references to prevent stack overflow.
+ *
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} stack - Internal tracking for current traversal path (to detect cycles)
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], stack = new WeakSet()) => {
     if (!data) return data;
-    if (secrets.length === 0) return data;
+
+    // Circular reference check for Objects and Arrays
+    // We use a 'stack' approach: track objects currently being visited in the current branch.
+    if (typeof data === 'object' && data !== null) {
+        if (stack.has(data)) {
+            return CIRCULAR_LABEL;
+        }
+        // Add to current path
+        stack.add(data);
+    }
 
     // Filter out empty secrets and short strings that might cause false positives
     const activeSecrets = secrets.filter(s => s && typeof s === 'string' && s.length > 5);
-    if (activeSecrets.length === 0) return data;
+
+    // Note: We traverse even if no secrets to ensure cycle safety
+
+    let result = data;
 
     if (typeof data === 'string') {
-        let sanitized = data;
-        activeSecrets.forEach(secret => {
-            // Global replace of the secret
-            sanitized = sanitized.split(secret).join(REDACTED_LABEL);
-        });
-        return sanitized;
-    }
+        if (activeSecrets.length > 0) {
+            let sanitized = data;
+            activeSecrets.forEach(secret => {
+                sanitized = sanitized.split(secret).join(REDACTED_LABEL);
+            });
+            result = sanitized;
+        }
+    } else if (Array.isArray(data)) {
+        // We must pass a NEW stack (clone) to children if we were using a Set/Array for path.
+        // BUT, WeakSet is mutable and passed by reference.
+        // If we use a single WeakSet for the whole traversal but "remove" on exit, it works as a path tracker.
 
-    if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
-    }
+        result = data.map(item => sanitizeData(item, activeSecrets, stack));
 
-    if (typeof data === 'object') {
+    } else if (typeof data === 'object') {
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], activeSecrets, stack);
             }
         }
-        return sanitizedObj;
+        result = sanitizedObj;
     }
 
-    return data;
+    // Backtracking: Remove from stack when leaving this node
+    if (typeof data === 'object' && data !== null) {
+        stack.delete(data);
+    }
+
+    return result;
 };
 
 /**
