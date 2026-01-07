@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Key, Save, X, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Shield, Globe, Download, Upload, Database } from 'lucide-react';
 import { testApiKey, translateUiSubset, getUiBatches } from '../../../services/llmService';
 import { useGame } from '../../../context/GameContext';
@@ -13,8 +13,10 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
     const [testMessage, setTestMessage] = useState('');
     const [isTranslating, setIsTranslating] = useState(false);
 
-    // File Input for Load
+    // Refs
     const fileInputRef = useRef(null);
+    const modalRef = useRef(null);
+    const closeButtonRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -25,8 +27,28 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
             setTestStatus('idle');
             setTestMessage('');
             setIsTranslating(false);
+
+            // Focus management: Focus close button initially or the modal itself
+            const timer = setTimeout(() => {
+                closeButtonRef.current?.focus();
+            }, 50);
+
+            return () => clearTimeout(timer);
         }
     }, [isOpen]);
+
+    // Handle Escape key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (!isOpen) return;
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
 
     const handleTest = async () => {
         if (!key.trim()) {
@@ -97,13 +119,21 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
     const isLanguageEnabled = testStatus === 'success';
 
     return (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? 'opacity-100 visible backdrop-blur-sm bg-black/40' : 'opacity-0 invisible backdrop-blur-none bg-black/0 pointer-events-none'}`}>
+        <div
+            className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? 'opacity-100 visible backdrop-blur-sm bg-black/40' : 'opacity-0 invisible backdrop-blur-none bg-black/0 pointer-events-none'}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-modal-title"
+            ref={modalRef}
+        >
             <div className={`bg-white/95 backdrop-blur-xl border-4 border-white/50 rounded-[2.5rem] p-6 md:p-8 w-full max-w-lg shadow-2xl relative overflow-hidden ring-4 ring-black/5 transition-all duration-300 ease-out delay-75 ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
 
                 <button
+                    ref={closeButtonRef}
                     onClick={onClose}
-                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2"
+                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                     disabled={isTranslating}
+                    aria-label="Close settings"
                 >
                     <X size={24} />
                 </button>
@@ -118,7 +148,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                         <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white shadow-inner border border-white rounded-full flex items-center justify-center mx-auto text-indigo-500 mb-4 animate-float">
                             <Database size={32} strokeWidth={2.5} />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Settings</h2>
+                        <h2 id="settings-modal-title" className="text-2xl font-bold text-gray-800 tracking-tight">Settings</h2>
                         <p className="text-sm font-medium text-gray-500 max-w-xs mx-auto leading-relaxed">Configure API & Save Data</p>
                     </div>
 
@@ -130,7 +160,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                         <div className="grid grid-cols-2 gap-4">
                             <button
                                 onClick={onSaveGame}
-                                className="group flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-lg hover:shadow-emerald-200 transition-all active:scale-95 hover:-translate-y-1"
+                                className="group flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-lg hover:shadow-emerald-200 transition-all active:scale-95 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
                             >
                                 <div className="bg-white/20 p-3 rounded-full group-hover:bg-white/30 transition-colors">
                                     <Download size={24} />
@@ -140,7 +170,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="group flex flex-col items-center justify-center gap-2 bg-white border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-500 p-6 rounded-2xl transition-all active:scale-95 hover:-translate-y-1 hover:bg-indigo-50"
+                                className="group flex flex-col items-center justify-center gap-2 bg-white border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-500 p-6 rounded-2xl transition-all active:scale-95 hover:-translate-y-1 hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                             >
                                 <div className="bg-gray-100 p-3 rounded-full group-hover:bg-white transition-colors">
                                     <Upload size={24} />
@@ -153,6 +183,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                                 className="hidden"
                                 accept=".json"
                                 onChange={handleFileChange}
+                                aria-hidden="true"
                             />
                         </div>
                     </div>
@@ -168,7 +199,9 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                         {/* API Key Input */}
                         <div className="space-y-2">
                             <div className="relative group">
+                                <label htmlFor="settings-api-key" className="sr-only">API Key</label>
                                 <input
+                                    id="settings-api-key"
                                     type={showKey ? "text" : "password"}
                                     value={key}
                                     onChange={(e) => {
@@ -181,8 +214,9 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                                 />
                                 <button
                                     onClick={() => setShowKey(!showKey)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 p-2 transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 p-2 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg focus-visible:outline-none"
                                     disabled={isTranslating}
+                                    aria-label={showKey ? "Hide API key" : "Show API key"}
                                 >
                                     {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
@@ -200,7 +234,10 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
                             {/* Status Message */}
                             {testMessage && (
-                                <div className={`text-xs font-semibold px-2 flex items-center gap-2 ${testStatus === 'error' ? 'text-rose-500' : testStatus === 'success' ? 'text-emerald-600' : 'text-indigo-500'}`}>
+                                <div
+                                    className={`text-xs font-semibold px-2 flex items-center gap-2 ${testStatus === 'error' ? 'text-rose-500' : testStatus === 'success' ? 'text-emerald-600' : 'text-indigo-500'}`}
+                                    role="status"
+                                >
                                     {testStatus === 'testing' && <Loader2 size={14} className="animate-spin" />}
                                     {testMessage}
                                 </div>
@@ -209,11 +246,12 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
                         {/* Language Input */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between px-1">
+                            <label htmlFor="settings-language" className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between px-1">
                                 {uiText.UI.API_MODAL.LANGUAGE_LABEL}
                                 {isTranslating && <span className="text-indigo-500 animate-pulse flex items-center gap-1"><Globe size={12} /> Translating UI...</span>}
                             </label>
                             <input
+                                id="settings-language"
                                 type="text"
                                 value={language}
                                 onChange={(e) => setLanguage(e.target.value)}
@@ -237,7 +275,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                             <button
                                 onClick={handleTest}
                                 disabled={testStatus === 'testing' || !key.trim() || isTranslating}
-                                className="flex-1 px-6 py-4 rounded-2xl border-2 border-gray-100 text-gray-600 hover:bg-gray-50 hover:border-gray-200 transition-all text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
+                                className="flex-1 px-6 py-4 rounded-2xl border-2 border-gray-100 text-gray-600 hover:bg-gray-50 hover:border-gray-200 transition-all text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                             >
                                 {testStatus === 'testing' && <Loader2 size={18} className="animate-spin" />}
                                 {uiText.UI.API_MODAL.BTN_TEST}
@@ -245,7 +283,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                             <button
                                 onClick={handleSaveConfig}
                                 disabled={!key.trim() || isTranslating}
-                                className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white transition-all text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 hover:shadow-indigo-300 flex items-center justify-center gap-2 active:scale-95 hover:-translate-y-0.5"
+                                className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white transition-all text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 hover:shadow-indigo-300 flex items-center justify-center gap-2 active:scale-95 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                             >
                                 {isTranslating ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
                                 {isTranslating ? "Translating..." : uiText.UI.API_MODAL.BTN_SAVE}
