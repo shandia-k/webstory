@@ -102,8 +102,9 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
                 <button
                     onClick={onClose}
-                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2"
+                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                     disabled={isTranslating}
+                    aria-label="Close settings"
                 >
                     <X size={24} />
                 </button>
