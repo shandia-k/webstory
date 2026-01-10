@@ -279,7 +279,7 @@ export const generateGameSetup = async (apiKey, genre, language) => {
         }
         throw new Error("Failed to parse JSON");
     } catch (error) {
-        console.error("Setup Generation Error:", error);
+        safeLog("Setup Generation Error:", error, [apiKey]);
         saveDebugLog("ERROR_SETUP", { error: error.message }, prompt);
         throw error;
     }
@@ -334,7 +334,7 @@ ${JSON.stringify(uiSubset, null, 2)}
         }
         return uiSubset;
     } catch (error) {
-        console.error("Translation Error:", error);
+        safeLog("Translation Error:", error, [apiKey]);
         return uiSubset;
     }
 };
@@ -389,7 +389,7 @@ Human: ${userMessage}
         return parsed;
 
     } catch (error) {
-        console.error("Chat Error:", error);
+        safeLog("Chat Error:", error, [apiKey]);
         return { text: "*Confused noises*", emoji: "💫" };
     }
 };
@@ -431,7 +431,7 @@ export const generateCampaignStart = async (apiKey, genre, palData, language) =>
         }
         throw new Error("Failed to parse Campaign JSON");
     } catch (error) {
-        console.error("Campaign Gen Error:", error);
+        safeLog("Campaign Gen Error:", error, [apiKey]);
         return {
             title: "The Unknown Journey",
             main_quest: "Explore the world and find your destiny.",
@@ -592,7 +592,7 @@ Format: JSON.
         return parsed || mockAdventureFallback("Empty Response");
 
     } catch (error) {
-        console.error("Adventure Gen Error:", error);
+        safeLog("Adventure Gen Error:", error, [apiKey]);
         return mockAdventureFallback(`API Error: ${error.message}`);
     }
 };
@@ -673,7 +673,7 @@ export const analyzeImagePoints = async (apiKey, base64Image, promptText = null)
         throw new Error("Failed to parse Vision JSON");
 
     } catch (error) {
-        console.error("Vision API Error:", error);
+        safeLog("Vision API Error:", error, [apiKey]);
         saveDebugLog("VISION_ERROR", { error: error.message });
         throw error;
     }
