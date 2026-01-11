@@ -1,6 +1,7 @@
 
-> ai-rpg-react@0.0.0 preview
-> vite preview --port 4173
+> ai-rpg-react@0.0.0 preview /app
+> vite preview
 
   ➜  Local:   http://localhost:4173/webstory/
   ➜  Network: use --host to expose
+ ELIFECYCLE  Command failed with exit code 143.
