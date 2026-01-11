@@ -141,7 +141,7 @@ const saveDebugLog = (type, data, prompt = null, model = null) => {
         const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
         const newEntry = {
-            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random().toString(36).substr(2, 9),
             timestamp: timestamp,
             type: type, // 'GAME_RESPONSE', 'SECTOR_GEN', 'CHAR_SETUP'
             prompt: sanitizeData(prompt, secrets),
