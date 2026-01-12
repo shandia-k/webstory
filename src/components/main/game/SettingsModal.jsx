@@ -15,6 +15,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
     // File Input for Load
     const fileInputRef = useRef(null);
+    const closeButtonRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -25,6 +26,8 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
             setTestStatus('idle');
             setTestMessage('');
             setIsTranslating(false);
+            // Focus trap / initial focus
+            setTimeout(() => closeButtonRef.current?.focus(), 50);
         }
     }, [isOpen]);
 
@@ -97,12 +100,19 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
     const isLanguageEnabled = testStatus === 'success';
 
     return (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? 'opacity-100 visible backdrop-blur-sm bg-black/40' : 'opacity-0 invisible backdrop-blur-none bg-black/0 pointer-events-none'}`}>
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-modal-title"
+            className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? 'opacity-100 visible backdrop-blur-sm bg-black/40' : 'opacity-0 invisible backdrop-blur-none bg-black/0 pointer-events-none'}`}
+        >
             <div className={`bg-white/95 backdrop-blur-xl border-4 border-white/50 rounded-[2.5rem] p-6 md:p-8 w-full max-w-lg shadow-2xl relative overflow-hidden ring-4 ring-black/5 transition-all duration-300 ease-out delay-75 ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
 
                 <button
+                    ref={closeButtonRef}
+                    aria-label="Close Settings"
                     onClick={onClose}
-                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2"
+                    className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2 focus-visible:ring-2 focus-visible:ring-indigo-500"
                     disabled={isTranslating}
                 >
                     <X size={24} />
@@ -118,7 +128,7 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                         <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white shadow-inner border border-white rounded-full flex items-center justify-center mx-auto text-indigo-500 mb-4 animate-float">
                             <Database size={32} strokeWidth={2.5} />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Settings</h2>
+                        <h2 id="settings-modal-title" className="text-2xl font-bold text-gray-800 tracking-tight">Settings</h2>
                         <p className="text-sm font-medium text-gray-500 max-w-xs mx-auto leading-relaxed">Configure API & Save Data</p>
                     </div>
 
@@ -168,7 +178,9 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                         {/* API Key Input */}
                         <div className="space-y-2">
                             <div className="relative group">
+                                <label htmlFor="api-key-input" className="sr-only">API Key</label>
                                 <input
+                                    id="api-key-input"
                                     type={showKey ? "text" : "password"}
                                     value={key}
                                     onChange={(e) => {
@@ -180,8 +192,9 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
                                     className="w-full bg-gray-50 text-gray-800 placeholder:text-gray-400 px-6 py-4 rounded-2xl border-2 border-transparent focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-mono text-sm pr-12 shadow-inner hover:bg-white"
                                 />
                                 <button
+                                    aria-label={showKey ? "Hide API Key" : "Show API Key"}
                                     onClick={() => setShowKey(!showKey)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 p-2 transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500 p-2 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg"
                                     disabled={isTranslating}
                                 >
                                     {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -209,11 +222,12 @@ export function SettingsModal({ isOpen, onClose, onSave, onSaveGame, onLoadGame 
 
                         {/* Language Input */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between px-1">
+                            <label htmlFor="language-input" className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between px-1">
                                 {uiText.UI.API_MODAL.LANGUAGE_LABEL}
                                 {isTranslating && <span className="text-indigo-500 animate-pulse flex items-center gap-1"><Globe size={12} /> Translating UI...</span>}
                             </label>
                             <input
+                                id="language-input"
                                 type="text"
                                 value={language}
                                 onChange={(e) => setLanguage(e.target.value)}
