@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Skull, Zap } from 'lucide-react';
 import { SaveLoadModal } from './game/SaveLoadModal';
 import { ApiKeyModal } from './game/ApiKeyModal';
@@ -33,7 +33,8 @@ const OmniHub = () => {
 
     const currentTheme = WORLD_THEMES[selectedWorld] || WORLD_THEMES['scifi'];
 
-    const toggleFullscreen = () => {
+    // --- MEMOIZED HANDLERS ---
+    const toggleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
             setIsFullscreen(true);
@@ -43,7 +44,7 @@ const OmniHub = () => {
                 setIsFullscreen(false);
             }
         }
-    };
+    }, []);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -54,21 +55,22 @@ const OmniHub = () => {
     }, []);
 
     // --- PHASE TRANSITIONS ---
-    const handleExplore = (currentStats) => {
+    const handleExplore = useCallback((currentStats) => {
         // Sync stats before adventure
-        if (adoptedPal) {
-            setAdoptedPal(prev => ({
+        setAdoptedPal(prev => {
+            if (!prev) return prev;
+            return {
                 ...prev,
                 role: {
                     ...prev.role,
                     stats: { ...prev.role.stats, ...currentStats }
                 }
-            }));
-        }
+            };
+        });
         setPhase(GAME_PHASES.ADVENTURE);
-    };
+    }, [setAdoptedPal, setPhase]);
 
-    const handleReturnFromAdventure = (results) => {
+    const handleReturnFromAdventure = useCallback((results) => {
         // Results: { hp, loot }
         // Update stats and inventory
         setAdoptedPal(prev => ({
@@ -90,7 +92,23 @@ const OmniHub = () => {
         }
 
         setPhase(GAME_PHASES.GAME);
-    };
+    }, [setAdoptedPal, setWallet, setPhase]);
+
+    const handleUpdateStats = useCallback((newStats) => {
+        setAdoptedPal(prev => ({
+            ...prev,
+            role: {
+                ...prev.role,
+                stats: { ...prev.role.stats, ...newStats }
+            }
+        }));
+    }, [setAdoptedPal]);
+
+    const handleNewGame = useCallback(() => setPhase(GAME_PHASES.ADOPTION), [setPhase]);
+    const handleResumeGame = useCallback(() => setPhase(GAME_PHASES.GAME), [setPhase]);
+    const handleOpenApi = useCallback(() => setIsApiOpen(true), []);
+    const handleOpenSaveLoad = useCallback(() => setIsSaveLoadOpen(true), []);
+    const handleOpenRigging = useCallback(() => setPhase(GAME_PHASES.RIGGING), [setPhase]);
 
     return (
         <div className={`w-full h-screen bg-gradient-to-b ${currentTheme.colors} transition-colors duration-700 font-cute flex flex-col items-center justify-center relative overflow-hidden text-white`}>
@@ -141,13 +159,13 @@ const OmniHub = () => {
                         setSelectedWorld={setSelectedWorld}
                         hasSavedGame={!!adoptedPal}
                         palData={adoptedPal} // Passed for Element display
-                        onNewGame={() => setPhase(GAME_PHASES.ADOPTION)}
-                        onResumeGame={() => setPhase(GAME_PHASES.GAME)}
-                        onOpenApi={() => setIsApiOpen(true)}
-                        onOpenSaveLoad={() => setIsSaveLoadOpen(true)}
+                        onNewGame={handleNewGame}
+                        onResumeGame={handleResumeGame}
+                        onOpenApi={handleOpenApi}
+                        onOpenSaveLoad={handleOpenSaveLoad}
                         isFullscreen={isFullscreen}
                         toggleFullscreen={toggleFullscreen}
-                        onOpenRigging={() => setPhase(GAME_PHASES.RIGGING)}
+                        onOpenRigging={handleOpenRigging}
                     />
                 )}
 
@@ -172,16 +190,8 @@ const OmniHub = () => {
                             palData={adoptedPal}
                             wallet={wallet}
                             onExplore={handleExplore}
-                            onOpenSettings={() => setIsSaveLoadOpen(true)}
-                            onUpdateStats={(newStats) => {
-                                setAdoptedPal(prev => ({
-                                    ...prev,
-                                    role: {
-                                        ...prev.role,
-                                        stats: { ...prev.role.stats, ...newStats }
-                                    }
-                                }));
-                            }}
+                            onOpenSettings={handleOpenSaveLoad}
+                            onUpdateStats={handleUpdateStats}
                         />
                     </div>
                 )}

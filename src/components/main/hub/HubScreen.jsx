@@ -8,7 +8,7 @@ import FitText from '../../common/FitText';
 
 import NewGameModal from './NewGameModal';
 
-export const HubScreen = ({
+export const HubScreen = React.memo(({
     selectedWorld,
     setSelectedWorld,
     hasSavedGame,
@@ -220,4 +220,4 @@ export const HubScreen = ({
             />
         </div >
     );
-};
+});
