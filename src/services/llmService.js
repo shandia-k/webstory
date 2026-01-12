@@ -152,7 +152,10 @@ const saveDebugLog = (type, data, prompt = null, model = null) => {
         const updatedHistory = [newEntry, ...history].slice(0, 50); // Keep max 50 for better history
         localStorage.setItem('nexus_debug_history', JSON.stringify(updatedHistory));
     } catch (e) {
-        console.error("Failed to save debug log", e);
+        // SECURITY: Try to redact potential secrets even if logging fails
+        let key = '';
+        try { key = getApiKey(); } catch (_) {}
+        safeLog("Failed to save debug log", e, [key]);
     }
 };
 
@@ -168,7 +171,7 @@ export const testApiKey = async (apiKey, language) => {
         saveDebugLog("API_TEST_SUCCESS", { model }, "Test connection", model);
         return true;
     } catch (error) {
-        console.error("API Test Error:", error);
+        safeLog("API Test Error:", error, [apiKey]);
         // SECURITY: Redact error message
         saveDebugLog("API_ERROR", { function: "testApiKey", error: error.message });
 
@@ -279,7 +282,7 @@ export const generateGameSetup = async (apiKey, genre, language) => {
         }
         throw new Error("Failed to parse JSON");
     } catch (error) {
-        console.error("Setup Generation Error:", error);
+        safeLog("Setup Generation Error:", error, [apiKey]);
         saveDebugLog("ERROR_SETUP", { error: error.message }, prompt);
         throw error;
     }
@@ -334,7 +337,7 @@ ${JSON.stringify(uiSubset, null, 2)}
         }
         return uiSubset;
     } catch (error) {
-        console.error("Translation Error:", error);
+        safeLog("Translation Error:", error, [apiKey]);
         return uiSubset;
     }
 };
@@ -389,7 +392,7 @@ Human: ${userMessage}
         return parsed;
 
     } catch (error) {
-        console.error("Chat Error:", error);
+        safeLog("Chat Error:", error, [apiKey]);
         return { text: "*Confused noises*", emoji: "💫" };
     }
 };
@@ -431,7 +434,7 @@ export const generateCampaignStart = async (apiKey, genre, palData, language) =>
         }
         throw new Error("Failed to parse Campaign JSON");
     } catch (error) {
-        console.error("Campaign Gen Error:", error);
+        safeLog("Campaign Gen Error:", error, [apiKey]);
         return {
             title: "The Unknown Journey",
             main_quest: "Explore the world and find your destiny.",
@@ -584,7 +587,7 @@ Format: JSON.
             const cleanText = jsonMatch ? jsonMatch[0] : text;
             parsed = JSON.parse(cleanText);
         } catch (e) {
-            console.error("JSON Parse Error", text);
+            safeLog("JSON Parse Error", text, [apiKey]);
             return mockAdventureFallback(`JSON Error: ${e.message.slice(0, 20)}`);
         }
 
@@ -592,7 +595,7 @@ Format: JSON.
         return parsed || mockAdventureFallback("Empty Response");
 
     } catch (error) {
-        console.error("Adventure Gen Error:", error);
+        safeLog("Adventure Gen Error:", error, [apiKey]);
         return mockAdventureFallback(`API Error: ${error.message}`);
     }
 };
@@ -673,7 +676,7 @@ export const analyzeImagePoints = async (apiKey, base64Image, promptText = null)
         throw new Error("Failed to parse Vision JSON");
 
     } catch (error) {
-        console.error("Vision API Error:", error);
+        safeLog("Vision API Error:", error, [apiKey]);
         saveDebugLog("VISION_ERROR", { error: error.message });
         throw error;
     }
