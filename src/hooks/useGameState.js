@@ -48,6 +48,46 @@ export function useGameState() {
         setTimeout(() => setNotification(null), 3000);
     }, []);
 
+    // EXPORT / IMPORT
+    const saveGame = useCallback(async () => {
+        try {
+            const data = {
+                version: GAME_CONFIG.VERSION,
+                timestamp: new Date().toISOString(),
+                // Use current state refs or capture in closure (dependencies below)
+                phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign
+            };
+            await saveGameToFile(data, `omnihub_save_${new Date().getTime()}.json`);
+            showNotification('Game Saved Successfully!');
+        } catch (e) {
+            console.error("Save Failed", e);
+            showNotification('Save Failed', 'error');
+        }
+    }, [phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign, showNotification]);
+
+    const loadGame = useCallback(async (file) => {
+        try {
+            const data = await parseSaveFile(file);
+            if (data.version && data.version.startsWith('OmniHub')) {
+                setPhase(data.phase || 'game');
+                setSelectedWorld(data.selectedWorld || 'scifi');
+                setAdoptedPal(data.adoptedPal);
+                setWallet(data.wallet || GAME_CONFIG.INITIAL_WALLET);
+                if (data.inventory) setInventory(data.inventory);
+                if (data.stats) setStats(data.stats);
+                if (data.history) setHistory(data.history);
+                if (data.campaign) setCampaign(data.campaign);
+
+                showNotification(`Loaded save for ${data.adoptedPal?.name || 'Unknown'}`);
+            } else {
+                showNotification('Invalid Save File', 'error');
+            }
+        } catch (e) {
+            console.error("Load Failed", e);
+            showNotification('Load Failed', 'error');
+        }
+    }, [showNotification]);
+
     // AUTO-SAVE SYSTEM (Debounced 2s)
     useEffect(() => {
         if (!adoptedPal) return;
@@ -72,45 +112,6 @@ export function useGameState() {
 
         return () => clearTimeout(saveTimeout);
     }, [phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign]);
-
-    // EXPORT / IMPORT
-    const saveGame = async () => {
-        try {
-            const data = {
-                version: GAME_CONFIG.VERSION,
-                timestamp: new Date().toISOString(),
-                phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign
-            };
-            await saveGameToFile(data, `omnihub_save_${new Date().getTime()}.json`);
-            showNotification('Game Saved Successfully!');
-        } catch (e) {
-            console.error("Save Failed", e);
-            showNotification('Save Failed', 'error');
-        }
-    };
-
-    const loadGame = async (file) => {
-        try {
-            const data = await parseSaveFile(file);
-            if (data.version && data.version.startsWith('OmniHub')) {
-                setPhase(data.phase || 'game');
-                setSelectedWorld(data.selectedWorld || 'scifi');
-                setAdoptedPal(data.adoptedPal);
-                setWallet(data.wallet || GAME_CONFIG.INITIAL_WALLET);
-                if (data.inventory) setInventory(data.inventory);
-                if (data.stats) setStats(data.stats);
-                if (data.history) setHistory(data.history);
-                if (data.campaign) setCampaign(data.campaign);
-
-                showNotification(`Loaded save for ${data.adoptedPal?.name || 'Unknown'}`);
-            } else {
-                showNotification('Invalid Save File', 'error');
-            }
-        } catch (e) {
-            console.error("Load Failed", e);
-            showNotification('Load Failed', 'error');
-        }
-    };
 
     // DYNAMIC TRANSLATIONS
     const [customTranslations, setCustomTranslations] = useState({});
@@ -145,7 +146,7 @@ export function useGameState() {
         };
     }, [language, customTranslations]);
 
-    return {
+    return useMemo(() => ({
         // State
         phase, setPhase,
         selectedWorld, setSelectedWorld,
@@ -165,7 +166,10 @@ export function useGameState() {
         loadGame,
         // Computed
         uiText
-    };
+    }), [
+        phase, selectedWorld, adoptedPal, wallet, stats, inventory, quest, history, campaign,
+        apiKey, language, notification, showNotification, updateUiText, saveGame, loadGame, uiText
+    ]);
 }
 
 

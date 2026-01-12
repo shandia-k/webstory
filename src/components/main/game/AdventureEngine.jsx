@@ -242,4 +242,4 @@ const AdventureEngine = ({ palData, onReturn, genre }) => {
     );
 };
 
-export default AdventureEngine;
+export default React.memo(AdventureEngine);
