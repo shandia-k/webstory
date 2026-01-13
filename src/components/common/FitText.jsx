@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, memo } from 'react';
 
 /**
  * FitText Component
@@ -8,7 +8,7 @@ import React, { useRef, useState, useEffect } from 'react';
  * @param {string} className - Wrapper classes
  * @param {number} compression - How aggressive to compress (default: 1)
  */
-const FitText = ({
+const FitText = memo(({
     children,
     className = "",
     maxFontSize,
@@ -41,17 +41,23 @@ const FitText = ({
             }
         };
 
-        // If maxFontSize is changing, we might need to wait for render?
-        // Actually, style update happens in render. resize runs after.
-        // We might need a small delay or useLayoutEffect if we were measuring layout strictly, 
-        // but useEffect is likely fine for this visual adjustment.
-        // To be safe against font loading or layout shifts:
-        const timeoutId = setTimeout(resize, 0);
+        // Use ResizeObserver for more efficient and accurate resizing
+        // This avoids global window resize listeners which can cause layout thrashing
+        // and ensures the text refits even if only the container changes size (not the window)
+        const resizeObserver = new ResizeObserver(() => {
+            // Wrap in requestAnimationFrame to avoid "ResizeObserver loop limit exceeded"
+            requestAnimationFrame(resize);
+        });
 
-        window.addEventListener('resize', resize);
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current);
+        }
+
+        // Initial check
+        resize();
+
         return () => {
-            window.removeEventListener('resize', resize);
-            clearTimeout(timeoutId);
+            resizeObserver.disconnect();
         };
     }, [children, compression, maxFontSize, minFontSize]);
 
@@ -77,6 +83,9 @@ const FitText = ({
             </span>
         </div>
     );
-};
+});
+
+// Display name for debugging
+FitText.displayName = 'FitText';
 
 export default FitText;
