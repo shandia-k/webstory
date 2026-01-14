@@ -5,3 +5,7 @@
 2. `aria-labelledby` linking to the modal title.
 3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
 4. `useRef` and `useEffect` to focus the primary input field on open.
+
+## 2024-05-22 - Destructive Action Modals
+**Learning:** For modals prompting destructive actions (like "New Game" overwriting a save), it is safer to default focus to the "Cancel" button rather than the "Confirm" button to prevent accidental data loss.
+**Action:** Use `useRef` to target the Cancel button and focus it on mount for confirmation dialogs.
