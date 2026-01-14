@@ -8,9 +8,10 @@ const REDACTED_LABEL = '[REDACTED]';
  * Recursively sanitizes data to remove sensitive information.
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} visited - Internal set to track visited objects for circular reference detection
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], visited = new WeakSet()) => {
     if (!data) return data;
     if (secrets.length === 0) return data;
 
@@ -27,18 +28,29 @@ export const sanitizeData = (data, secrets = []) => {
         return sanitized;
     }
 
-    if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
+    if (typeof data === 'object') {
+        if (visited.has(data)) return '[CIRCULAR]';
+        visited.add(data);
     }
 
-    if (typeof data === 'object') {
-        const sanitizedObj = {};
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
-            }
+    try {
+        if (Array.isArray(data)) {
+            return data.map(item => sanitizeData(item, activeSecrets, visited));
         }
-        return sanitizedObj;
+
+        if (typeof data === 'object') {
+            const sanitizedObj = {};
+            for (const key in data) {
+                if (Object.prototype.hasOwnProperty.call(data, key)) {
+                    sanitizedObj[key] = sanitizeData(data[key], activeSecrets, visited);
+                }
+            }
+            return sanitizedObj;
+        }
+    } finally {
+        if (typeof data === 'object') {
+            visited.delete(data);
+        }
     }
 
     return data;
