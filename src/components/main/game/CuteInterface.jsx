@@ -228,11 +228,15 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             </div>
                             <button
                                 onClick={onOpenSettings}
+                                aria-label="Settings"
                                 className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
                             >
                                 <Settings size={20} />
                             </button>
-                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm">
+                            <button
+                                aria-label="Music"
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
+                            >
                                 <Music size={20} />
                             </button>
                         </div>
