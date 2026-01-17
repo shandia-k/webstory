@@ -5,3 +5,7 @@
 2. `aria-labelledby` linking to the modal title.
 3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
 4. `useRef` and `useEffect` to focus the primary input field on open.
+
+## 2024-05-23 - Component Cleanup & Usage Verification
+**Learning:** UX improvements can be wasted on unused components (Ghost Components). In this codebase, `SettingsModal.jsx` exists but is unused; the active components are `SaveLoadModal.jsx` and `ApiKeyModal.jsx`.
+**Action:** Before optimizing a component, verify it is actually imported and used in the main application flow (e.g., in `OmniHub.jsx`) to ensure efforts directly impact the user experience.
