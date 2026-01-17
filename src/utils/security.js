@@ -6,19 +6,30 @@ const REDACTED_LABEL = '[REDACTED]';
 
 /**
  * Recursively sanitizes data to remove sensitive information.
+ * Handles circular references to prevent stack overflows.
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} visited - Internal use for circular reference detection
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], visited = new WeakSet()) => {
     if (!data) return data;
-    if (secrets.length === 0) return data;
+
+    // Check for circular references
+    if (typeof data === 'object' && data !== null) {
+        if (visited.has(data)) {
+            return '[CIRCULAR]';
+        }
+        visited.add(data);
+    }
 
     // Filter out empty secrets and short strings that might cause false positives
+    // Note: We do this even if recursion passed already filtered secrets,
+    // it's a cheap operation for small arrays.
     const activeSecrets = secrets.filter(s => s && typeof s === 'string' && s.length > 5);
-    if (activeSecrets.length === 0) return data;
 
     if (typeof data === 'string') {
+        if (activeSecrets.length === 0) return data;
         let sanitized = data;
         activeSecrets.forEach(secret => {
             // Global replace of the secret
@@ -28,14 +39,14 @@ export const sanitizeData = (data, secrets = []) => {
     }
 
     if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
+        return data.map(item => sanitizeData(item, activeSecrets, visited));
     }
 
     if (typeof data === 'object') {
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], activeSecrets, visited);
             }
         }
         return sanitizedObj;
@@ -52,6 +63,9 @@ export const sanitizeData = (data, secrets = []) => {
  */
 export const safeLog = (message, error, secrets = []) => {
     const errorMsg = error instanceof Error ? error.message : String(error);
+    // Note: We don't pass 'error' object itself to sanitizeData here, just the message.
+    // If we wanted to log the full error object safely, we would pass it directly.
+    // But keeping existing behavior for now.
     const sanitizedMsg = sanitizeData(errorMsg, secrets);
     console.warn(message, sanitizedMsg);
 };
