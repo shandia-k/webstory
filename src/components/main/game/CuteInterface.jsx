@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     Cloud, Sun, Music, MessageCircle, Crown, Star, Settings
 } from 'lucide-react';
@@ -43,12 +43,49 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
     const nextLevelXp = getXpToNextLevel(level);
     const xpPercent = Math.min(100, Math.max(0, (currentXp / nextLevelXp) * 100));
 
-    // --- SYNC STATS TO GLOBAL STATE ---
-    React.useEffect(() => {
-        if (onUpdateStats) {
-            onUpdateStats({ happiness, energy, hunger });
+    // --- PERFORMANCE OPTIMIZATION: DEBOUNCE GLOBAL SYNC ---
+    // Bolt: Debouncing stats update to prevent context thrashing and excessive re-renders
+    const statsRef = useRef({ happiness, energy, hunger });
+    const onUpdateStatsRef = useRef(onUpdateStats);
+    const isDirty = useRef(false);
+
+    // Keep callback ref fresh to avoid dependency loops with parent
+    useEffect(() => {
+        onUpdateStatsRef.current = onUpdateStats;
+    });
+
+    // Debounce Logic
+    useEffect(() => {
+        // Update refs immediately so we have the latest if we need to flush
+        statsRef.current = { happiness, energy, hunger };
+        isDirty.current = true;
+
+        const timer = setTimeout(() => {
+            if (onUpdateStatsRef.current) {
+                onUpdateStatsRef.current({ happiness, energy, hunger });
+                isDirty.current = false;
+            }
+        }, 1000); // 1 second debounce
+
+        return () => clearTimeout(timer);
+    }, [happiness, energy, hunger]);
+
+    // Safety Flush on Unmount
+    useEffect(() => {
+        return () => {
+            if (isDirty.current && onUpdateStatsRef.current) {
+                onUpdateStatsRef.current(statsRef.current);
+            }
+        };
+    }, []);
+
+    // Helper to force sync before critical actions
+    const flushStats = () => {
+        if (onUpdateStatsRef.current) {
+            onUpdateStatsRef.current({ happiness, energy, hunger });
+            isDirty.current = false;
         }
-    }, [happiness, energy, hunger]); // Auto-save trigger upon any change
+    };
 
     // --- ANIMATION TRIGGERS ---
     const triggerBounce = () => {
@@ -227,7 +264,10 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                                 <span className="font-bold text-yellow-700">{wallet?.gold || 0}</span>
                             </div>
                             <button
-                                onClick={onOpenSettings}
+                                onClick={() => {
+                                    flushStats();
+                                    onOpenSettings();
+                                }}
                                 className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
                             >
                                 <Settings size={20} />
@@ -249,7 +289,10 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                     {/* ACTION DECK (Grid) */}
                     <ActionMenu
                         onAction={handleAction}
-                        onExplore={() => onExplore({ happiness, energy, hunger })}
+                        onExplore={() => {
+                            flushStats();
+                            onExplore({ happiness, energy, hunger });
+                        }}
                         uiText={uiText}
                     />
                 </div>
