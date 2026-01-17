@@ -1,0 +1,3 @@
+## 2025-05-19 - Context Thrashing Prevention
+**Learning:** Frequent updates to Global Context (even via stable setters) trigger re-renders in all consumers. If a component (like `CuteInterface`) updates global state on every interaction (e.g., "Pet" click), it causes the entire app to re-render, creating a massive performance bottleneck.
+**Action:** Use a "Local State + Debounced Sync" pattern. Manage state locally for immediate feedback, and use a debounced effect to sync to Global Context. Ensure to flush pending updates on critical actions (unmount, save, navigation) to prevent data loss. Use `useRef` for the sync callback to avoid dependency loops if the parent re-renders frequently.
