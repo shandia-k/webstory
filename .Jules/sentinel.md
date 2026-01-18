@@ -1,0 +1,4 @@
+## 2024-05-23 - Circular Reference DoS in Security Utils
+**Vulnerability:** The `sanitizeData` function in `src/utils/security.js` lacked circular reference detection. When processing objects with circular references (e.g., complex error objects or DOM nodes), it would cause infinite recursion, leading to a "Maximum call stack size exceeded" crash. This is a Denial of Service (DoS) vector if such objects are logged via `safeLog`.
+**Learning:** Even security utilities can be sources of vulnerability if not robustly tested against edge cases like circular data structures. Recursive functions processing untrusted or complex input must always have termination guards.
+**Prevention:** Always implement cycle detection (e.g., using `WeakSet`) when recursively traversing objects. Add unit tests specifically for circular structures for any deep-traversal utility.
