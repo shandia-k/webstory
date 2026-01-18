@@ -11,7 +11,7 @@ import { getXpToNextLevel } from '../../../game-mechanics/LevelingSystem';
 import StatsDisplay from './hud/StatsDisplay';
 import ActionMenu from './hud/ActionMenu';
 
-const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateStats }) => {
+const CuteInterface = React.memo(function CuteInterface({ palData, onExplore, wallet, onOpenSettings, onUpdateStats }) {
     // --- STATE ---
     const { apiKey, uiText } = useGame();
     const [happiness, setHappiness] = useState(palData?.role?.stats?.happiness || 80);
@@ -137,39 +137,18 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
         }
     };
 
-    // --- CSS STYLES ---
-    const styles = `
-        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
-        .font-cute { font-family: 'Quicksand', sans-serif; }
-        
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        @keyframes squish { 
-            0% { transform: scale(1, 1); } 
-            40% { transform: scale(1.2, 0.8); } 
-            60% { transform: scale(0.9, 1.1); } 
-            100% { transform: scale(1, 1); } 
-        }
-        @keyframes pop { 0% { transform: scale(0); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
-        
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .animate-squish { animation: squish 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .particle { animation: pop 0.8s ease-out forwards; }
-    `;
-
     return (
-        <div className={`w-full h-screen bg-gradient-to-b ${bgGradient} transition-colors duration-1000 flex items-center justify-center font-cute text-gray-700 overflow-hidden relative`}>
-            <style>{styles}</style>
-
+        <div className={`w-full h-screen bg-gradient-to-b ${bgGradient} transition-colors duration-1000 flex items-center justify-center font-quicksand text-gray-700 overflow-hidden relative`}>
             {/* BACKGROUND DECORATIONS */}
-            <div className="absolute top-10 left-10 text-white/40 animate-float" style={{ animationDelay: '0s' }}><Cloud size={64} /></div>
-            <div className="absolute top-20 right-10 text-white/40 animate-float" style={{ animationDelay: '1.5s' }}><Cloud size={48} /></div>
+            <div className="absolute top-10 left-10 text-white/40 animate-float-vertical" style={{ animationDelay: '0s' }}><Cloud size={64} /></div>
+            <div className="absolute top-20 right-10 text-white/40 animate-float-vertical" style={{ animationDelay: '1.5s' }}><Cloud size={48} /></div>
             <div className="absolute bottom-20 left-20 text-yellow-300/40 animate-spin-slow"><Sun size={80} /></div>
 
             {/* PARTICLES */}
             {particles.map(p => (
                 <div
                     key={p.id}
-                    className="particle absolute rounded-full"
+                    className="animate-particle-pop absolute rounded-full"
                     style={{ left: p.x, top: p.y, width: p.size, height: p.size, backgroundColor: p.color }}
                 />
             ))}
@@ -180,7 +159,7 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                 {/* LEFT PANEL (VISUALS) */}
                 <div className="flex-1 flex flex-col items-center justify-center relative md:w-5/12 order-2 md:order-1">
                     <div
-                        className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform ${isBouncing ? 'animate-squish' : 'animate-float'}`}
+                        className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform ${isBouncing ? 'animate-squish' : 'animate-float-vertical'}`}
                         onClick={(e) => handleAction('pet', e)}
                     >
                         {activeEmoji}
@@ -229,10 +208,11 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             <button
                                 onClick={onOpenSettings}
                                 className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
+                                aria-label="Settings"
                             >
                                 <Settings size={20} />
                             </button>
-                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm">
+                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm" aria-label="Music">
                                 <Music size={20} />
                             </button>
                         </div>
@@ -260,6 +240,7 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             <button
                 onClick={() => setIsChatOpen(true)}
                 className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce"
+                aria-label="Open Chat"
             >
                 <MessageCircle size={28} className="md:w-10 md:h-10" />
             </button>
@@ -275,6 +256,6 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             />
         </div>
     );
-};
+});
 
 export default CuteInterface;
