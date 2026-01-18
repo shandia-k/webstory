@@ -8,9 +8,10 @@ const REDACTED_LABEL = '[REDACTED]';
  * Recursively sanitizes data to remove sensitive information.
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} visited - Internal use for circular reference detection
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], visited = new WeakSet()) => {
     if (!data) return data;
     if (secrets.length === 0) return data;
 
@@ -27,15 +28,23 @@ export const sanitizeData = (data, secrets = []) => {
         return sanitized;
     }
 
+    // Circular reference check
+    if (typeof data === 'object') {
+        if (visited.has(data)) {
+            return '[CIRCULAR]';
+        }
+        visited.add(data);
+    }
+
     if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
+        return data.map(item => sanitizeData(item, activeSecrets, visited));
     }
 
     if (typeof data === 'object') {
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], activeSecrets, visited);
             }
         }
         return sanitizedObj;
@@ -47,11 +56,11 @@ export const sanitizeData = (data, secrets = []) => {
 /**
  * Helper to safely log errors that might contain secrets.
  * @param {string} message - The prefix message
- * @param {Error|string} error - The error object or string
+ * @param {Error|string|Object} error - The error object or string
  * @param {string[]} secrets - Secrets to redact
  */
 export const safeLog = (message, error, secrets = []) => {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    const sanitizedMsg = sanitizeData(errorMsg, secrets);
-    console.warn(message, sanitizedMsg);
+    const errorToLog = error instanceof Error ? error.message : error;
+    const sanitized = sanitizeData(errorToLog, secrets);
+    console.warn(message, sanitized);
 };
