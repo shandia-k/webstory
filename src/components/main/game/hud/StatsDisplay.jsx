@@ -38,9 +38,16 @@ const StatPill = ({ icon: Icon, value, color, barColor, label }) => {
     }, [value]);
 
     return (
-        <div className={`flex flex-col w-full gap-1 transform transition-all duration-300 ${animClass}`}>
+        <div
+            className={`flex flex-col w-full gap-1 transform transition-all duration-300 ${animClass}`}
+            role="progressbar"
+            aria-label={label}
+            aria-valuenow={value}
+            aria-valuemin={0}
+            aria-valuemax={100}
+        >
             <style>{styles}</style>
-            <div className="flex justify-between text-xs font-bold text-gray-500 px-1">
+            <div className="flex justify-between text-xs font-bold text-gray-500 px-1" aria-hidden="true">
                 <span className="flex items-center gap-1"><Icon size={12} className={color} /> {label}</span>
                 <span>{value}%</span>
             </div>

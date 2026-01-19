@@ -180,8 +180,17 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                 {/* LEFT PANEL (VISUALS) */}
                 <div className="flex-1 flex flex-col items-center justify-center relative md:w-5/12 order-2 md:order-1">
                     <div
-                        className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform ${isBouncing ? 'animate-squish' : 'animate-float'}`}
+                        role="button"
+                        tabIndex="0"
+                        aria-label="Pet your companion"
+                        className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform ${isBouncing ? 'animate-squish' : 'animate-float'} focus-visible:outline-none focus-visible:scale-110 focus-visible:drop-shadow-2xl rounded-full`}
                         onClick={(e) => handleAction('pet', e)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleAction('pet', e);
+                            }
+                        }}
                     >
                         {activeEmoji}
                     </div>
@@ -207,8 +216,15 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                                 <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold">Lv. {level}</span>
                             </div>
                             {/* XP BAR */}
-                            <div className="mt-1 mx-2 flex flex-col gap-0.5 w-full max-w-[140px]">
-                                <div className="flex justify-between text-[10px] font-bold text-gray-500 px-1">
+                            <div
+                                className="mt-1 mx-2 flex flex-col gap-0.5 w-full max-w-[140px]"
+                                role="progressbar"
+                                aria-label="Experience"
+                                aria-valuenow={currentXp}
+                                aria-valuemin={0}
+                                aria-valuemax={nextLevelXp}
+                            >
+                                <div className="flex justify-between text-[10px] font-bold text-gray-500 px-1" aria-hidden="true">
                                     <span>XP</span>
                                     <span>{currentXp}/{nextLevelXp}</span>
                                 </div>
@@ -228,11 +244,15 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             </div>
                             <button
                                 onClick={onOpenSettings}
-                                className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
+                                aria-label="Settings"
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:outline-none"
                             >
                                 <Settings size={20} />
                             </button>
-                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm">
+                            <button
+                                aria-label="Music"
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-pink-300 focus-visible:outline-none"
+                            >
                                 <Music size={20} />
                             </button>
                         </div>
@@ -259,7 +279,8 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             {/* FLOATING FAB */}
             <button
                 onClick={() => setIsChatOpen(true)}
-                className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce"
+                aria-label="Open Chat"
+                className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce focus-visible:ring-4 focus-visible:ring-pink-300 focus-visible:outline-none"
             >
                 <MessageCircle size={28} className="md:w-10 md:h-10" />
             </button>
