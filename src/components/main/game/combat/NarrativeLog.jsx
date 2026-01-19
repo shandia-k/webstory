@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
-const NarrativeLog = ({ logs }) => {
+const NarrativeLog = memo(function NarrativeLog({ logs }) {
     const endRef = useRef(null);
 
     useEffect(() => {
@@ -25,6 +25,6 @@ const NarrativeLog = ({ logs }) => {
             </div>
         </div>
     );
-};
+});
 
 export default NarrativeLog;
