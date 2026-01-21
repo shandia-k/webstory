@@ -73,23 +73,10 @@ const AdoptionForm = ({ onComplete, genre }) => {
         onComplete(finalData);
     };
 
-    // --- STYLES ---
-    const styles = `
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
-        .font-cute { font-family: 'Fredoka', sans-serif; }
-        
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        @keyframes pop { 0% { scale: 0.8; opacity: 0; } 100% { scale: 1; opacity: 1; } }
-        
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .animate-pop { animation: pop 0.5s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
-    `;
-
     // --- LOADING SCREEN ---
     if (loading) {
         return (
-            <div className="w-full h-screen bg-pink-50 flex flex-col items-center justify-center font-cute text-pink-400">
-                <style>{styles}</style>
+            <div className="w-full h-screen bg-pink-50 flex flex-col items-center justify-center font-fredoka text-pink-400">
                 <div className="text-6xl animate-bounce mb-4">🥚</div>
                 <p className="tracking-widest font-bold animate-pulse">{uiText.CUTE_UI.LOADING.EGGS}</p>
                 <p className="text-xs text-pink-300 mt-2">{uiText.CUTE_UI.LOADING.CONNECTING}</p>
@@ -100,15 +87,14 @@ const AdoptionForm = ({ onComplete, genre }) => {
     const currentPal = palsData && palsData[selectedPal] ? palsData[selectedPal] : palsData[0];
 
     return (
-        <div className="w-full h-screen md:h-screen bg-gradient-to-b from-blue-50 to-pink-50 font-cute flex items-center justify-center p-0 md:p-4 relative overflow-hidden">
-            <style>{styles}</style>
+        <div className="w-full h-screen md:h-screen bg-gradient-to-b from-blue-50 to-pink-50 font-fredoka flex items-center justify-center p-0 md:p-4 relative overflow-hidden">
 
             {/* DECORATION (Desktop only mainly) */}
-            <div className="absolute top-10 left-10 text-white/60 animate-float hidden md:block"><Cloud size={80} /></div>
+            <div className="absolute top-10 left-10 text-white/60 animate-float-vertical hidden md:block"><Cloud size={80} /></div>
             <div className="absolute bottom-20 right-10 text-yellow-200 animate-pulse hidden md:block"><Sparkles size={100} /></div>
 
             {/* CARD CONTAINER (RESPONSIVE) */}
-            <div className="w-full h-screen md:h-auto md:max-w-5xl md:aspect-video bg-white/80 backdrop-blur-xl md:border-4 md:border-white md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-pop transition-all duration-500">
+            <div className="w-full h-screen md:h-auto md:max-w-5xl md:aspect-video bg-white/80 backdrop-blur-xl md:border-4 md:border-white md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-card-pop transition-all duration-500">
 
                 {/* --- LEFT PANEL (VISUALS) --- */}
                 <div className={`
@@ -123,7 +109,7 @@ const AdoptionForm = ({ onComplete, genre }) => {
 
                     {/* MAIN EMOJI DISPLAY */}
                     <div className="relative z-10 transition-transform duration-500">
-                        <div className="text-[120px] md:text-[150px] animate-float drop-shadow-2xl filter leading-none">
+                        <div className="text-[120px] md:text-[150px] animate-float-vertical drop-shadow-2xl filter leading-none">
                             {Array.from(currentPal.emoji)[0]}
                         </div>
 
