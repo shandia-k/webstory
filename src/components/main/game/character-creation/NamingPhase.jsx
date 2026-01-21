@@ -1,6 +1,7 @@
-import React from 'react';
-import { RefreshCw, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, Check, AlertCircle } from 'lucide-react';
 import FitText from '../../../common/FitText';
+import { validateInput } from '../../../../utils/security';
 
 const NamingPhase = ({
     step,
@@ -11,6 +12,29 @@ const NamingPhase = ({
     onConfirm,
     uiText
 }) => {
+    const [validationError, setValidationError] = useState(null);
+
+    const handleNameChange = (e) => {
+        const newVal = e.target.value;
+        setName(newVal);
+        const { isValid, error } = validateInput(newVal, 'name');
+        setValidationError(isValid ? null : error);
+    };
+
+    const handleRandomName = () => {
+        const aiNames = currentPal.suggested_names || [];
+        const genericNames = ["Mochi", "Pudding", "Glitch", "Sparky", "Boba", "Pippin", "Zappy"];
+        const pool = aiNames.length > 0 ? aiNames : genericNames;
+
+        // Pick random, avoid current name if possible
+        let newName = pool[Math.floor(Math.random() * pool.length)];
+        if (newName === name && pool.length > 1) {
+            newName = pool.find(n => n !== name) || newName;
+        }
+        setName(newName);
+        // Reset validation for generated names (assumed safe)
+        setValidationError(null);
+    };
 
     if (step === 2) {
         return (
@@ -22,36 +46,32 @@ const NamingPhase = ({
                         <input
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={handleNameChange}
                             placeholder="e.g. Bubu"
-                            className="min-w-0 flex-1 text-xl md:text-2xl font-bold text-gray-700 bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 focus:border-pink-400 focus:bg-white outline-none transition-all placeholder:text-gray-300"
+                            className={`min-w-0 flex-1 text-xl md:text-2xl font-bold text-gray-700 bg-gray-50 border-2 rounded-2xl px-4 outline-none transition-all placeholder:text-gray-300 ${validationError ? 'border-red-300 bg-red-50 focus:border-red-400' : 'border-gray-200 focus:border-pink-400 focus:bg-white'}`}
                             autoFocus
                         />
                         <button
-                            onClick={() => {
-                                const aiNames = currentPal.suggested_names || [];
-                                const genericNames = ["Mochi", "Pudding", "Glitch", "Sparky", "Boba", "Pippin", "Zappy"];
-                                const pool = aiNames.length > 0 ? aiNames : genericNames;
-
-                                // Pick random, avoid current name if possible
-                                let newName = pool[Math.floor(Math.random() * pool.length)];
-                                if (newName === name && pool.length > 1) {
-                                    newName = pool.find(n => n !== name) || newName;
-                                }
-                                setName(newName);
-                            }}
+                            onClick={handleRandomName}
                             className="shrink-0 aspect-square h-full bg-gray-100 rounded-2xl text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors flex items-center justify-center"
                             title="Random Name from AI"
                         >
                             <RefreshCw size={24} />
                         </button>
                     </div>
+                    {/* Validation Error Message */}
+                    {validationError && (
+                        <div className="flex items-center gap-1.5 text-red-500 text-xs font-bold pl-1 animate-pulse">
+                            <AlertCircle size={12} />
+                            {validationError}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-3 w-full">
                     <button
                         onClick={() => setStep(3)}
-                        disabled={!name}
+                        disabled={!name || !!validationError}
                         className="w-full h-14 md:h-16 bg-pink-400 text-white rounded-2xl font-bold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-pink-500 hover:scale-[1.02] transition-all flex items-center justify-center"
                     >
                         {uiText.CUTE_UI.BTN_CONTINUE}
