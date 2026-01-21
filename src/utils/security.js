@@ -55,3 +55,24 @@ export const safeLog = (message, error, secrets = []) => {
     const sanitizedMsg = sanitizeData(errorMsg, secrets);
     console.warn(message, sanitizedMsg);
 };
+
+/**
+ * Validates user input to prevent injection and enforce constraints.
+ * @param {string} input - The input string to validate.
+ * @param {string} type - 'name' | 'chat' | 'text'
+ * @returns {object} - { isValid: boolean, error: string|null }
+ */
+export const validateInput = (input, type = 'text') => {
+    if (!input || typeof input !== 'string') return { isValid: false, error: 'Input is empty' };
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return { isValid: false, error: 'Input is empty' };
+
+    if (type === 'name') {
+        if (trimmed.length > 20) return { isValid: false, error: 'Name too long (max 20)' };
+        // Allow alphanumeric, space, dash, underscore
+        const regex = /^[a-zA-Z0-9 _-]+$/;
+        if (!regex.test(trimmed)) return { isValid: false, error: 'Alphanumeric characters only' };
+    }
+
+    return { isValid: true, error: null, sanitized: trimmed };
+};
