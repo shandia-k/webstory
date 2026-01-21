@@ -152,7 +152,14 @@ const AdventureUI = React.memo(({
                                             </span>
                                         </h3>
                                         {/* Enemy HP Bar */}
-                                        <div className="w-full h-4 bg-black/40 rounded-full overflow-hidden mb-6 border border-white/20">
+                                        <div
+                                            className="w-full h-4 bg-black/40 rounded-full overflow-hidden mb-6 border border-white/20"
+                                            role="progressbar"
+                                            aria-label={`${enemy.name} Health`}
+                                            aria-valuenow={enemy.hp}
+                                            aria-valuemin="0"
+                                            aria-valuemax={enemy.maxHp}
+                                        >
                                             <div className="h-full bg-red-500 transition-all duration-500" style={{ width: `${(enemy.hp / enemy.maxHp) * 100}%` }}></div>
                                         </div>
                                         <p className="text-lg leading-relaxed">{combatLog}</p>

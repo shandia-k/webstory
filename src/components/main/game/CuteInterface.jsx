@@ -208,11 +208,18 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             </div>
                             {/* XP BAR */}
                             <div className="mt-1 mx-2 flex flex-col gap-0.5 w-full max-w-[140px]">
-                                <div className="flex justify-between text-[10px] font-bold text-gray-500 px-1">
+                                <div className="flex justify-between text-[10px] font-bold text-gray-500 px-1" aria-hidden="true">
                                     <span>XP</span>
                                     <span>{currentXp}/{nextLevelXp}</span>
                                 </div>
-                                <div className="w-full bg-slate-200 border border-slate-300 h-2.5 rounded-full overflow-hidden">
+                                <div
+                                    className="w-full bg-slate-200 border border-slate-300 h-2.5 rounded-full overflow-hidden"
+                                    role="progressbar"
+                                    aria-label="Experience Points"
+                                    aria-valuenow={currentXp}
+                                    aria-valuemin="0"
+                                    aria-valuemax={nextLevelXp}
+                                >
                                     <div
                                         className="bg-gradient-to-r from-indigo-400 to-purple-400 h-full rounded-full transition-all duration-500"
                                         style={{ width: `${xpPercent}%` }}

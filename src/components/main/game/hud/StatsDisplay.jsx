@@ -40,11 +40,26 @@ const StatPill = ({ icon: Icon, value, color, barColor, label }) => {
     return (
         <div className={`flex flex-col w-full gap-1 transform transition-all duration-300 ${animClass}`}>
             <style>{styles}</style>
-            <div className="flex justify-between text-xs font-bold text-gray-500 px-1">
+
+            {/*
+              Palette UX Improvement:
+              Hidden from screen readers to prevent duplicate announcement.
+              The semantic progress bar below will handle the accessible value.
+            */}
+            <div className="flex justify-between text-xs font-bold text-gray-500 px-1" aria-hidden="true">
                 <span className="flex items-center gap-1"><Icon size={12} className={color} /> {label}</span>
                 <span>{value}%</span>
             </div>
-            <div className="h-4 bg-white rounded-full p-1 shadow-sm border border-gray-100 overflow-hidden">
+
+            {/* Accessible Progress Bar Container */}
+            <div
+                role="progressbar"
+                aria-valuenow={value}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-label={label}
+                className="h-4 bg-white rounded-full p-1 shadow-sm border border-gray-100 overflow-hidden"
+            >
                 <div
                     className={`h-full rounded-full transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${barColor}`}
                     style={{ width: `${value}%` }}
