@@ -1,15 +1,48 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
+    const cancelBtnRef = useRef(null);
+
+    // Focus management: Focus Cancel button on open for safety
+    useEffect(() => {
+        if (isOpen) {
+            // Delay to allow animation to complete before focusing
+            const timer = setTimeout(() => {
+                cancelBtnRef.current?.focus();
+            }, 350);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    // Keyboard support: Handle Escape key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-game-title"
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
+                aria-hidden="true"
             />
 
             {/* Modal Content */}
@@ -17,14 +50,14 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
                 {/* Header Pattern */}
                 <div className="h-24 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-                    <AlertTriangle size={48} className="text-white drop-shadow-md animate-pulse" />
+                    <AlertTriangle size={48} className="text-white drop-shadow-md animate-pulse" aria-hidden="true" />
                 </div>
 
                 {/* Close Button */}
 
 
                 <div className="p-6 text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-gray-800">
+                    <h3 id="new-game-title" className="text-2xl font-bold text-gray-800">
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME_TITLE}
                     </h3>
 
@@ -34,14 +67,15 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
 
                     <div className="flex gap-3 pt-4">
                         <button
+                            ref={cancelBtnRef}
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                            className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
                         >
                             {uiText.HUB.BTN_CANCEL}
                         </button>
                         <button
                             onClick={onConfirm}
-                            className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all active:scale-95"
+                            className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 focus-visible:outline-none"
                         >
                             {uiText.HUB.BTN_START}
                         </button>
