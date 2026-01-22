@@ -3,39 +3,66 @@
  */
 
 const REDACTED_LABEL = '[REDACTED]';
+const CIRCULAR_LABEL = '[CIRCULAR]';
+
+/**
+ * Validates user input against an allowlist.
+ * @param {string} input - The input string to validate
+ * @param {object} options - Validation options
+ * @param {number} options.maxLength - Maximum allowed length
+ * @param {RegExp} options.pattern - Regex pattern to match
+ * @returns {boolean} - True if valid, false otherwise
+ */
+export const validateInput = (input, options = {}) => {
+    const { maxLength = 50, pattern = /^[a-zA-Z0-9\s\-_]+$/ } = options;
+
+    if (typeof input !== 'string') return false;
+    if (input.length > maxLength) return false;
+    if (!pattern.test(input)) return false;
+
+    return true;
+};
 
 /**
  * Recursively sanitizes data to remove sensitive information.
  * @param {any} data - The data to sanitize (object, array, string, etc.)
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
+ * @param {WeakSet} seen - Internal use only: tracks visited objects to prevent cycles
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+export const sanitizeData = (data, secrets = [], seen = new WeakSet()) => {
     if (!data) return data;
-    if (secrets.length === 0) return data;
+    // Note: We cannot optimize by returning early if secrets is empty
+    // because we still need to traverse objects to strip circular references.
 
     // Filter out empty secrets and short strings that might cause false positives
     const activeSecrets = secrets.filter(s => s && typeof s === 'string' && s.length > 5);
-    if (activeSecrets.length === 0) return data;
 
     if (typeof data === 'string') {
         let sanitized = data;
-        activeSecrets.forEach(secret => {
-            // Global replace of the secret
-            sanitized = sanitized.split(secret).join(REDACTED_LABEL);
-        });
+        if (activeSecrets.length > 0) {
+            activeSecrets.forEach(secret => {
+                // Global replace of the secret
+                sanitized = sanitized.split(secret).join(REDACTED_LABEL);
+            });
+        }
         return sanitized;
     }
 
-    if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
-    }
-
     if (typeof data === 'object') {
+        if (seen.has(data)) {
+            return CIRCULAR_LABEL;
+        }
+        seen.add(data);
+
+        if (Array.isArray(data)) {
+            return data.map(item => sanitizeData(item, activeSecrets, seen));
+        }
+
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], activeSecrets, seen);
             }
         }
         return sanitizedObj;
