@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCw, Check } from 'lucide-react';
 import FitText from '../../../common/FitText';
+import { validateInput } from '../../../../utils/security';
 
 const NamingPhase = ({
     step,
@@ -22,7 +23,14 @@ const NamingPhase = ({
                         <input
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                // Allow empty string (for deleting) and validate others
+                                if (val === '' || validateInput(val, { maxLength: 20 })) {
+                                    setName(val);
+                                }
+                            }}
+                            maxLength={20}
                             placeholder="e.g. Bubu"
                             className="min-w-0 flex-1 text-xl md:text-2xl font-bold text-gray-700 bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 focus:border-pink-400 focus:bg-white outline-none transition-all placeholder:text-gray-300"
                             autoFocus
@@ -38,7 +46,16 @@ const NamingPhase = ({
                                 if (newName === name && pool.length > 1) {
                                     newName = pool.find(n => n !== name) || newName;
                                 }
-                                setName(newName);
+                                // Ensure AI generated name is also valid
+                                if (validateInput(newName, { maxLength: 20 })) {
+                                    setName(newName);
+                                } else {
+                                    // Try truncating if length was the only issue
+                                    const truncated = newName.substring(0, 20);
+                                    if (validateInput(truncated, { maxLength: 20 })) {
+                                        setName(truncated);
+                                    }
+                                }
                             }}
                             className="shrink-0 aspect-square h-full bg-gray-100 rounded-2xl text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors flex items-center justify-center"
                             title="Random Name from AI"
