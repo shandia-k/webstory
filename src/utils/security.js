@@ -18,6 +18,12 @@ export const sanitizeData = (data, secrets = []) => {
     const activeSecrets = secrets.filter(s => s && typeof s === 'string' && s.length > 5);
     if (activeSecrets.length === 0) return data;
 
+    return sanitizeDataRecursive(data, activeSecrets, new WeakSet());
+};
+
+const sanitizeDataRecursive = (data, activeSecrets, visited) => {
+    if (!data) return data;
+
     if (typeof data === 'string') {
         let sanitized = data;
         activeSecrets.forEach(secret => {
@@ -27,15 +33,18 @@ export const sanitizeData = (data, secrets = []) => {
         return sanitized;
     }
 
-    if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
-    }
-
     if (typeof data === 'object') {
+        if (visited.has(data)) return '[CIRCULAR]';
+        visited.add(data);
+
+        if (Array.isArray(data)) {
+            return data.map(item => sanitizeDataRecursive(item, activeSecrets, visited));
+        }
+
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeDataRecursive(data[key], activeSecrets, visited);
             }
         }
         return sanitizedObj;
