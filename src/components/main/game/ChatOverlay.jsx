@@ -130,4 +130,4 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
     );
 };
 
-export default ChatOverlay;
+export default React.memo(ChatOverlay);
