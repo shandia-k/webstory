@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { TRANSLATIONS } from "../constants/textUI";
-import { sanitizeData, safeLog } from "../utils/security";
+import { sanitizeData, safeLog, validateInput } from "../utils/security";
 
 
 const getUiText = (lang) => {
@@ -72,6 +72,10 @@ const fetchAvailableModels = async (apiKey) => {
  */
 // Update generateWithFallback to handle array prompts (text + image)
 const generateWithFallback = async (apiKey, prompt, systemInstruction = null) => {
+    // SECURITY: Basic validation of prompt structure/content
+    // We allow large prompts (up to 100k chars) but strip dangerous control characters
+    const safePrompt = validateInput(prompt, 100000);
+
     // Lazy load models once
     if (!modelListPromise) {
         modelListPromise = fetchAvailableModels(apiKey);
@@ -98,7 +102,7 @@ const generateWithFallback = async (apiKey, prompt, systemInstruction = null) =>
         console.log(`Attempting generation with ${modelName}...`);
 
         // SUPPORT IMAGE INPUT: Prompt can be a string or an array [string, imagePart]
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(safePrompt);
         return { result, model: modelName };
     };
 
@@ -113,9 +117,9 @@ const generateWithFallback = async (apiKey, prompt, systemInstruction = null) =>
             for (const fallbackModel of FALLBACK_MODELS) {
                 try {
                     console.log(`Retrying with fallback ${fallbackModel}...`);
-                    saveDebugLog("API_FALLBACK_ATTEMPT", { to: fallbackModel, reason: error.message }, prompt, PRIMARY_MODEL);
+                    saveDebugLog("API_FALLBACK_ATTEMPT", { to: fallbackModel, reason: error.message }, safePrompt, PRIMARY_MODEL);
                     const response = await tryModel(fallbackModel);
-                    saveDebugLog("API_FALLBACK_SUCCESS", { model: fallbackModel }, prompt, fallbackModel);
+                    saveDebugLog("API_FALLBACK_SUCCESS", { model: fallbackModel }, safePrompt, fallbackModel);
                     return response;
                 } catch (fallbackError) {
                     safeLog(`${fallbackModel} failed:`, fallbackError, [apiKey]);
@@ -351,6 +355,9 @@ export const generatePalChat = async (apiKey, palData, userMessage, history, gen
     if (!apiKey) throw new Error("API Key Missing");
 
     try {
+        // SECURITY: Validate user input
+        const validMessage = validateInput(userMessage, 1000);
+
         const recentHistory = history.slice(-5).map(h => `${h.role === 'user' ? 'Human' : palData.name}: ${h.text} `).join('\n');
 
         const prompt = `
@@ -364,7 +371,7 @@ Chatting with owner.Keep it SHORT, CUTE, EXPRESSIVE.Max 2 sentences.Use emojis s
 
 ## HISTORY
 ${recentHistory}
-Human: ${userMessage}
+Human: ${validMessage}
 
 ## OUTPUT FORMAT(JSON)
 { "text": "Response text", "emoji": "Statement emoji" }
