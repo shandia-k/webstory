@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Heart, Zap, Smile } from 'lucide-react';
 
 const StatBar = ({ icon: Icon, value, max, color }) => (
@@ -14,7 +14,9 @@ const StatBar = ({ icon: Icon, value, max, color }) => (
     </div>
 );
 
-const CombatHUD = ({ entity, isEnemy = false }) => {
+// ⚡ Bolt: Memoized to prevent re-renders when parent state (logs, turn, phase) updates
+// but entity stats remain the same. This is critical for combat performance.
+const CombatHUD = memo(({ entity, isEnemy = false }) => {
     return (
         <div className={`
             absolute top-4 ${isEnemy ? 'right-4' : 'left-4'} 
@@ -49,6 +51,8 @@ const CombatHUD = ({ entity, isEnemy = false }) => {
             )}
         </div>
     );
-};
+});
+
+CombatHUD.displayName = 'CombatHUD';
 
 export default CombatHUD;
