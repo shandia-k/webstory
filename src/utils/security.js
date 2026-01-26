@@ -55,3 +55,35 @@ export const safeLog = (message, error, secrets = []) => {
     const sanitizedMsg = sanitizeData(errorMsg, secrets);
     console.warn(message, sanitizedMsg);
 };
+
+/**
+ * Validates user input to prevent common attacks and resource exhaustion.
+ * @param {string|string[]} input - The input to validate (string or array of strings)
+ * @param {number} maxLength - Maximum allowed length (default 2000)
+ * @throws {Error} If input is invalid
+ * @returns {string|string[]} The validated and potentially sanitized input
+ */
+export const validateInput = (input, maxLength = 2000) => {
+    if (!input) return input;
+
+    // Helper to validate single string
+    const validateString = (str) => {
+        if (typeof str !== 'string') {
+            throw new Error("Invalid input type: expected string.");
+        }
+        if (str.length > maxLength) {
+            throw new Error(`Input exceeds maximum length of ${maxLength} characters.`);
+        }
+        // Basic sanitization: strip low-level control chars (except newline, tab)
+        return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+    };
+
+    if (Array.isArray(input)) {
+        return input.map(item => {
+            if (typeof item === 'string') return validateString(item);
+            return item;
+        });
+    }
+
+    return validateString(input);
+};
