@@ -1,11 +1,34 @@
-import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { AlertTriangle, X } from 'lucide-react';
 
 const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
+    const cancelRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            // Focus cancel button for safety on open
+            cancelRef.current?.focus();
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    onClose();
+                }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-game-title"
+            aria-describedby="new-game-desc"
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -21,19 +44,26 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
                 </div>
 
                 {/* Close Button */}
-
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors"
+                    aria-label="Close modal"
+                >
+                    <X size={20} />
+                </button>
 
                 <div className="p-6 text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-gray-800">
+                    <h3 id="new-game-title" className="text-2xl font-bold text-gray-800">
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME_TITLE}
                     </h3>
 
-                    <p className="text-gray-600 leading-relaxed">
+                    <p id="new-game-desc" className="text-gray-600 leading-relaxed">
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME}
                     </p>
 
                     <div className="flex gap-3 pt-4">
                         <button
+                            ref={cancelRef}
                             onClick={onClose}
                             className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
                         >
