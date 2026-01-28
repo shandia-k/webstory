@@ -55,3 +55,31 @@ export const safeLog = (message, error, secrets = []) => {
     const sanitizedMsg = sanitizeData(errorMsg, secrets);
     console.warn(message, sanitizedMsg);
 };
+
+/**
+ * Validates and sanitizes user input strings.
+ * Enforces length limits and removes control characters.
+ * @param {string} input - The input string
+ * @param {number} maxLength - Maximum allowed length (default 1000)
+ * @returns {string} - The sanitized string
+ */
+export const validateInput = (input, maxLength = 1000) => {
+    if (typeof input !== 'string') return '';
+
+    // 1. Trim whitespace
+    let clean = input.trim();
+
+    // 2. Enforce max length
+    if (clean.length > maxLength) {
+        clean = clean.substring(0, maxLength);
+    }
+
+    // 3. Strip non-printable control characters (ASCII 0-31), except:
+    // - \t (9)
+    // - \n (10)
+    // - \r (13)
+    // Also strip DEL (127)
+    clean = clean.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+    return clean;
+};
