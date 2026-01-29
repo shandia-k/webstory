@@ -182,6 +182,15 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                     <div
                         className={`text-[150px] md:text-[220px] filter drop-shadow-xl cursor-pointer select-none transition-transform ${isBouncing ? 'animate-squish' : 'animate-float'}`}
                         onClick={(e) => handleAction('pet', e)}
+                        role="button"
+                        tabIndex="0"
+                        aria-label="Pet your pal"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                if (e.key === ' ') e.preventDefault();
+                                handleAction('pet', e);
+                            }
+                        }}
                     >
                         {activeEmoji}
                     </div>
@@ -212,7 +221,14 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                                     <span>XP</span>
                                     <span>{currentXp}/{nextLevelXp}</span>
                                 </div>
-                                <div className="w-full bg-slate-200 border border-slate-300 h-2.5 rounded-full overflow-hidden">
+                                <div
+                                    className="w-full bg-slate-200 border border-slate-300 h-2.5 rounded-full overflow-hidden"
+                                    role="progressbar"
+                                    aria-valuenow={currentXp}
+                                    aria-valuemin="0"
+                                    aria-valuemax={nextLevelXp}
+                                    aria-label="Experience Progress"
+                                >
                                     <div
                                         className="bg-gradient-to-r from-indigo-400 to-purple-400 h-full rounded-full transition-all duration-500"
                                         style={{ width: `${xpPercent}%` }}
@@ -229,10 +245,14 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
                             <button
                                 onClick={onOpenSettings}
                                 className="p-3 bg-white rounded-full text-gray-400 hover:text-indigo-500 transition-colors shadow-sm active:scale-95"
+                                aria-label="Settings"
                             >
                                 <Settings size={20} />
                             </button>
-                            <button className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm">
+                            <button
+                                className="p-3 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
+                                aria-label="Toggle Music"
+                            >
                                 <Music size={20} />
                             </button>
                         </div>
@@ -260,6 +280,7 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
             <button
                 onClick={() => setIsChatOpen(true)}
                 className="absolute bottom-6 right-6 md:bottom-10 md:right-10 w-14 h-14 md:w-20 md:h-20 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 hover:rotate-12 transition-all z-50 animate-bounce"
+                aria-label="Open Chat"
             >
                 <MessageCircle size={28} className="md:w-10 md:h-10" />
             </button>
