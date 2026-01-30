@@ -45,6 +45,31 @@ export const sanitizeData = (data, secrets = []) => {
 };
 
 /**
+ * Validates input string for length and allowable characters.
+ * @param {string} input - The input string to validate
+ * @param {number} maxLength - Maximum allowed length
+ * @returns {string} - The validated and potentially trimmed input
+ */
+export const validateInput = (input, maxLength = 1000) => {
+    if (typeof input !== 'string') return '';
+
+    // Trim whitespace
+    let trimmed = input.trim();
+
+    // Check length
+    if (trimmed.length > maxLength) {
+        // We silently truncate for UX, but in a strict env we might throw or log
+        trimmed = trimmed.substring(0, maxLength);
+    }
+
+    // Remove control characters except newline and tab
+    // eslint-disable-next-line no-control-regex
+    trimmed = trimmed.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+    return trimmed;
+};
+
+/**
  * Helper to safely log errors that might contain secrets.
  * @param {string} message - The prefix message
  * @param {Error|string} error - The error object or string
