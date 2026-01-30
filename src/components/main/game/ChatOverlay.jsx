@@ -34,14 +34,19 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
             ></div>
 
             {/* Chat Window */}
-            <div className="
-                w-full md:w-[400px] h-[80vh] md:h-[600px] 
-                bg-white/90 backdrop-blur-xl shadow-2xl 
-                rounded-t-[2.5rem] md:rounded-[2.5rem] 
-                flex flex-col overflow-hidden pointer-events-auto
-                animate-in slide-in-from-bottom-10 duration-300
-                border-t border-l border-r border-white/50
-            ">
+            <div
+                className="
+                    w-full md:w-[400px] h-[80vh] md:h-[600px]
+                    bg-white/90 backdrop-blur-xl shadow-2xl
+                    rounded-t-[2.5rem] md:rounded-[2.5rem]
+                    flex flex-col overflow-hidden pointer-events-auto
+                    animate-in slide-in-from-bottom-10 duration-300
+                    border-t border-l border-r border-white/50
+                "
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Chat with ${palName}`}
+            >
                 {/* Header */}
                 <div className="p-4 md:p-6 bg-gradient-to-r from-pink-50 to-purple-50 border-b border-pink-100/50 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3">
@@ -58,6 +63,7 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Close chat"
                         className="p-2 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
                     >
                         <X size={20} />
@@ -119,6 +125,7 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || isTyping}
+                            aria-label="Send message"
                             className="w-12 h-12 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
                         >
                             <Send size={20} className={input.trim() ? "ml-1" : ""} />
