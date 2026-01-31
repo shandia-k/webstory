@@ -5,3 +5,7 @@
 2. `aria-labelledby` linking to the modal title.
 3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
 4. `useRef` and `useEffect` to focus the primary input field on open.
+
+## 2025-05-23 - Custom Interactive Elements Accessibility
+**Learning:** High-impact "fun" interactions often use non-semantic elements (like divs with emojis) for styling flexibility. These are invisible to keyboard and screen reader users unless explicitly patched with `role="button"`, `tabIndex="0"`, `aria-label`, and `onKeyDown` (handling Enter/Space).
+**Action:** When identifying "fun" UI elements, immediately check if they are keyboard accessible. If not, treat them as buttons semantically.
