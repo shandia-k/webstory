@@ -14,7 +14,8 @@ const StatBar = ({ icon: Icon, value, max, color }) => (
     </div>
 );
 
-const CombatHUD = ({ entity, isEnemy = false }) => {
+// [BOLT] Optimized: Memoized to prevent re-renders when parent (CombatArena) updates logs but entity stats are stable.
+const CombatHUD = React.memo(function CombatHUD({ entity, isEnemy = false }) {
     return (
         <div className={`
             absolute top-4 ${isEnemy ? 'right-4' : 'left-4'} 
@@ -49,6 +50,6 @@ const CombatHUD = ({ entity, isEnemy = false }) => {
             )}
         </div>
     );
-};
+});
 
 export default CombatHUD;
