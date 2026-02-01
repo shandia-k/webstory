@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { TRANSLATIONS } from "../constants/textUI";
-import { sanitizeData, safeLog } from "../utils/security";
+import { sanitizeData, safeLog, validateInput } from "../utils/security";
 
 
 const getUiText = (lang) => {
@@ -350,6 +350,10 @@ ${JSON.stringify(uiSubset, null, 2)}
 export const generatePalChat = async (apiKey, palData, userMessage, history, genre) => {
     if (!apiKey) throw new Error("API Key Missing");
 
+    // VALIDATE INPUT: Prevent DoS/excessive tokens
+    const cleanMessage = validateInput(userMessage, 500);
+    if (!cleanMessage) return { text: "...", emoji: "🤔" };
+
     try {
         const recentHistory = history.slice(-5).map(h => `${h.role === 'user' ? 'Human' : palData.name}: ${h.text} `).join('\n');
 
@@ -364,7 +368,7 @@ Chatting with owner.Keep it SHORT, CUTE, EXPRESSIVE.Max 2 sentences.Use emojis s
 
 ## HISTORY
 ${recentHistory}
-Human: ${userMessage}
+Human: ${cleanMessage}
 
 ## OUTPUT FORMAT(JSON)
 { "text": "Response text", "emoji": "Statement emoji" }
