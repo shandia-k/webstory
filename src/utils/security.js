@@ -10,7 +10,25 @@ const REDACTED_LABEL = '[REDACTED]';
  * @param {string[]} secrets - Array of sensitive strings to redact (e.g. API keys)
  * @returns {any} - The sanitized data
  */
-export const sanitizeData = (data, secrets = []) => {
+/**
+ * Validates and sanitizes user input strings.
+ * Enforces length limits and removes non-printable characters.
+ * @param {string} input - The user input
+ * @param {number} maxLength - Maximum allowed length (default 1000)
+ * @returns {string} - The validated and trimmed string
+ */
+export const validateInput = (input, maxLength = 1000) => {
+    if (typeof input !== 'string') return '';
+    let trimmed = input.trim();
+    if (trimmed.length > maxLength) {
+        trimmed = trimmed.substring(0, maxLength);
+    }
+    // Remove non-printable control characters (ASCII 0-31 except 9, 10, 13) and DEL (127)
+    // eslint-disable-next-line no-control-regex
+    return trimmed.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+};
+
+export const sanitizeData = (data, secrets = [], visited = new WeakSet()) => {
     if (!data) return data;
     if (secrets.length === 0) return data;
 
@@ -27,15 +45,18 @@ export const sanitizeData = (data, secrets = []) => {
         return sanitized;
     }
 
-    if (Array.isArray(data)) {
-        return data.map(item => sanitizeData(item, activeSecrets));
-    }
-
     if (typeof data === 'object') {
+        if (visited.has(data)) return '[CIRCULAR]';
+        visited.add(data);
+
+        if (Array.isArray(data)) {
+            return data.map(item => sanitizeData(item, activeSecrets, visited));
+        }
+
         const sanitizedObj = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                sanitizedObj[key] = sanitizeData(data[key], activeSecrets);
+                sanitizedObj[key] = sanitizeData(data[key], activeSecrets, visited);
             }
         }
         return sanitizedObj;
