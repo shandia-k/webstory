@@ -26,7 +26,12 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center pointer-events-none">
+        <div
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center pointer-events-none"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="chat-title"
+        >
             {/* Backdrop Area - Closes on click */}
             <div
                 className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto transition-opacity animate-in fade-in"
@@ -49,7 +54,7 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                             💬
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-700">Chat with {palName}</h3>
+                            <h3 id="chat-title" className="font-bold text-gray-700">Chat with {palName}</h3>
                             <div className="flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                                 <span className="text-xs text-green-500 font-bold uppercase tracking-wider">Online</span>
@@ -58,6 +63,7 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Close chat"
                         className="p-2 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
                     >
                         <X size={20} />
@@ -113,12 +119,14 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Type a message..."
+                            aria-label="Chat input"
                             className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 focus:outline-none focus:border-pink-300 focus:bg-white transition-all text-sm md:text-base placeholder:text-gray-400"
                             autoFocus
                         />
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || isTyping}
+                            aria-label="Send message"
                             className="w-12 h-12 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
                         >
                             <Send size={20} className={input.trim() ? "ml-1" : ""} />
