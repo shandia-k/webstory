@@ -420,3 +420,24 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* --- StatPill Animations (Optimized) --- */
+@keyframes pulse-grow {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); filter: brightness(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-pulse-grow {
+  animation: pulse-grow 0.4s ease-in-out;
+}
+
+.animate-shake-x {
+  animation: shake-x 0.4s ease-in-out;
+}
