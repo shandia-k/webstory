@@ -5,3 +5,7 @@
 2. `aria-labelledby` linking to the modal title.
 3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
 4. `useRef` and `useEffect` to focus the primary input field on open.
+
+## 2024-05-22 - Core Interaction Accessibility
+**Learning:** The central "Pet" interaction was built as a `div` with `onClick`, making the core game loop inaccessible to keyboard users.
+**Action:** For all custom interactive elements (non-buttons), strictly enforce `role="button"`, `tabIndex="0"`, and `onKeyDown` handlers for Enter/Space keys.
