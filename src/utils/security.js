@@ -55,3 +55,25 @@ export const safeLog = (message, error, secrets = []) => {
     const sanitizedMsg = sanitizeData(errorMsg, secrets);
     console.warn(message, sanitizedMsg);
 };
+
+/**
+ * Generates a cryptographically secure random ID.
+ * Falls back to a timestamp-based ID if crypto is unavailable.
+ * @returns {string} - A secure UUID or random string
+ */
+export const generateSecureId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Fallback for environments without crypto.randomUUID (unlikely in modern browsers/node)
+    // Using simple timestamp + random is still weak but better than nothing if crypto fails entirely.
+    // Ideally we'd use crypto.getRandomValues if randomUUID is missing.
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    // Absolute fallback (Weak, but matches previous behavior)
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
