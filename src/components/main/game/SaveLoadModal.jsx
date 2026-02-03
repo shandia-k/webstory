@@ -1,8 +1,56 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Download, Upload, Database, X } from 'lucide-react';
 
 export function SaveLoadModal({ isOpen, onClose, onSaveGame, onLoadGame, onExitToMenu }) {
     const fileInputRef = useRef(null);
+    const modalRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        // Focus trap and Escape key listener
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+
+            if (e.key === 'Tab') {
+                const focusableElements = modalRef.current?.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+
+                if (!focusableElements || focusableElements.length === 0) return;
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Set initial focus to Close button after transition
+        const timer = setTimeout(() => {
+            const closeBtn = modalRef.current?.querySelector('button[aria-label="Close"]');
+            closeBtn?.focus();
+        }, 350);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            clearTimeout(timer);
+        };
+    }, [isOpen, onClose]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -13,11 +61,20 @@ export function SaveLoadModal({ isOpen, onClose, onSaveGame, onLoadGame, onExitT
     };
 
     return (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? 'opacity-100 visible backdrop-blur-sm bg-black/40' : 'opacity-0 invisible backdrop-blur-none bg-black/0 pointer-events-none'}`}>
-            <div className={`bg-white/95 backdrop-blur-xl border-4 border-white/50 rounded-[2.5rem] p-6 md:p-8 w-full max-w-lg shadow-2xl relative overflow-hidden ring-4 ring-black/5 transition-all duration-300 ease-out delay-75 ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+        <div
+            className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? 'opacity-100 visible backdrop-blur-sm bg-black/40' : 'opacity-0 invisible backdrop-blur-none bg-black/0 pointer-events-none'}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="save-load-title"
+        >
+            <div
+                ref={modalRef}
+                className={`bg-white/95 backdrop-blur-xl border-4 border-white/50 rounded-[2.5rem] p-6 md:p-8 w-full max-w-lg shadow-2xl relative overflow-hidden ring-4 ring-black/5 transition-all duration-300 ease-out delay-75 ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}
+            >
 
                 <button
                     onClick={onClose}
+                    aria-label="Close"
                     className="absolute right-6 top-6 text-gray-400 hover:text-gray-800 transition-colors z-20 hover:rotate-90 duration-300 bg-white/50 rounded-full p-2"
                 >
                     <X size={24} />
@@ -33,7 +90,7 @@ export function SaveLoadModal({ isOpen, onClose, onSaveGame, onLoadGame, onExitT
                         <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white shadow-inner border border-white rounded-full flex items-center justify-center mx-auto text-indigo-500 mb-4 animate-float">
                             <Database size={32} strokeWidth={2.5} />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Save & Load</h2>
+                        <h2 id="save-load-title" className="text-2xl font-bold text-gray-800 tracking-tight">Save & Load</h2>
                         <p className="text-sm font-medium text-gray-500 max-w-xs mx-auto leading-relaxed">Manage your adventure data</p>
                     </div>
 
