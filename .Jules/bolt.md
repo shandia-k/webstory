@@ -1,0 +1,3 @@
+## 2024-05-23 - Context Thrashing vs Memoization
+**Learning:** `OmniHub` acts as a central controller but passes new callback references on every render, defeating child memoization. Additionally, `GameContext` updates (e.g., notifications) trigger re-renders in consumers (`CuteInterface`) even if they are memoized. `React.memo` effectively blocks re-renders from parent state changes (like opening Modals), but context consumers still update.
+**Action:** Stabilize callbacks in `OmniHub` using `useCallback` to enable effective memoization of heavy children (`CuteInterface`, `AdventureEngine`). Future optimization should consider splitting `GameContext` to separate high-frequency updates from stable state.

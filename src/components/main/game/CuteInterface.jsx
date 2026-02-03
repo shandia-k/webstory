@@ -277,4 +277,4 @@ const CuteInterface = ({ palData, onExplore, wallet, onOpenSettings, onUpdateSta
     );
 };
 
-export default CuteInterface;
+export default React.memo(CuteInterface);

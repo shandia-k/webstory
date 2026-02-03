@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Skull, Zap } from 'lucide-react';
 import { SaveLoadModal } from './game/SaveLoadModal';
 import { ApiKeyModal } from './game/ApiKeyModal';
@@ -33,7 +33,7 @@ const OmniHub = () => {
 
     const currentTheme = WORLD_THEMES[selectedWorld] || WORLD_THEMES['scifi'];
 
-    const toggleFullscreen = () => {
+    const toggleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
             setIsFullscreen(true);
@@ -43,7 +43,7 @@ const OmniHub = () => {
                 setIsFullscreen(false);
             }
         }
-    };
+    }, []);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -54,7 +54,7 @@ const OmniHub = () => {
     }, []);
 
     // --- PHASE TRANSITIONS ---
-    const handleExplore = (currentStats) => {
+    const handleExplore = useCallback((currentStats) => {
         // Sync stats before adventure
         if (adoptedPal) {
             setAdoptedPal(prev => ({
@@ -66,9 +66,9 @@ const OmniHub = () => {
             }));
         }
         setPhase(GAME_PHASES.ADVENTURE);
-    };
+    }, [adoptedPal, setAdoptedPal, setPhase]);
 
-    const handleReturnFromAdventure = (results) => {
+    const handleReturnFromAdventure = useCallback((results) => {
         // Results: { hp, loot }
         // Update stats and inventory
         setAdoptedPal(prev => ({
@@ -90,7 +90,42 @@ const OmniHub = () => {
         }
 
         setPhase(GAME_PHASES.GAME);
-    };
+    }, [setAdoptedPal, setWallet, setPhase]);
+
+    // --- STABLE HANDLERS ---
+    const handleNewGame = useCallback(() => setPhase(GAME_PHASES.ADOPTION), [setPhase]);
+    const handleResumeGame = useCallback(() => setPhase(GAME_PHASES.GAME), [setPhase]);
+    const handleOpenApi = useCallback(() => setIsApiOpen(true), []);
+    const handleOpenSaveLoad = useCallback(() => setIsSaveLoadOpen(true), []);
+    const handleOpenRigging = useCallback(() => setPhase(GAME_PHASES.RIGGING), [setPhase]);
+
+    const handleCloseSaveLoad = useCallback(() => setIsSaveLoadOpen(false), []);
+    const handleExitToMenu = useCallback(() => {
+        setPhase(GAME_PHASES.HUB);
+        setIsSaveLoadOpen(false);
+    }, [setPhase]);
+
+    const handleCloseApi = useCallback(() => setIsApiOpen(false), []);
+    const handleSaveApi = useCallback((key, lang) => {
+        setApiKey(key);
+        setLanguage(lang);
+    }, [setApiKey, setLanguage]);
+
+    const handleAdoptionComplete = useCallback((data) => {
+        setAdoptedPal(data);
+        setPhase(GAME_PHASES.GAME);
+    }, [setAdoptedPal, setPhase]);
+    const handleBackToHub = useCallback(() => setPhase(GAME_PHASES.HUB), [setPhase]);
+
+    const handleUpdateStats = useCallback((newStats) => {
+        setAdoptedPal(prev => ({
+            ...prev,
+            role: {
+                ...prev.role,
+                stats: { ...prev.role.stats, ...newStats }
+            }
+        }));
+    }, [setAdoptedPal]);
 
     return (
         <div className={`w-full h-screen bg-gradient-to-b ${currentTheme.colors} transition-colors duration-700 font-cute flex flex-col items-center justify-center relative overflow-hidden text-white`}>
@@ -98,22 +133,16 @@ const OmniHub = () => {
             {/* MODALS */}
             <SaveLoadModal
                 isOpen={isSaveLoadOpen}
-                onClose={() => setIsSaveLoadOpen(false)}
+                onClose={handleCloseSaveLoad}
                 onSaveGame={saveGame}
                 onLoadGame={loadGame}
-                onExitToMenu={() => {
-                    setPhase(GAME_PHASES.HUB);
-                    setIsSaveLoadOpen(false);
-                }}
+                onExitToMenu={handleExitToMenu}
             />
 
             <ApiKeyModal
                 isOpen={isApiOpen}
-                onClose={() => setIsApiOpen(false)}
-                onSave={(key, lang) => {
-                    setApiKey(key);
-                    setLanguage(lang);
-                }}
+                onClose={handleCloseApi}
+                onSave={handleSaveApi}
             />
 
             {/* NOTIFICATION TOAST */}
@@ -141,13 +170,13 @@ const OmniHub = () => {
                         setSelectedWorld={setSelectedWorld}
                         hasSavedGame={!!adoptedPal}
                         palData={adoptedPal} // Passed for Element display
-                        onNewGame={() => setPhase(GAME_PHASES.ADOPTION)}
-                        onResumeGame={() => setPhase(GAME_PHASES.GAME)}
-                        onOpenApi={() => setIsApiOpen(true)}
-                        onOpenSaveLoad={() => setIsSaveLoadOpen(true)}
+                        onNewGame={handleNewGame}
+                        onResumeGame={handleResumeGame}
+                        onOpenApi={handleOpenApi}
+                        onOpenSaveLoad={handleOpenSaveLoad}
                         isFullscreen={isFullscreen}
                         toggleFullscreen={toggleFullscreen}
-                        onOpenRigging={() => setPhase(GAME_PHASES.RIGGING)}
+                        onOpenRigging={handleOpenRigging}
                     />
                 )}
 
@@ -155,12 +184,9 @@ const OmniHub = () => {
                 {phase === GAME_PHASES.ADOPTION && (
                     <div className="absolute inset-0 z-50 animate-in fade-in duration-500">
                         <AdoptionForm
-                            onComplete={(data) => {
-                                setAdoptedPal(data);
-                                setPhase(GAME_PHASES.GAME);
-                            }}
+                            onComplete={handleAdoptionComplete}
                             genre={currentTheme.title} // Pass genre context
-                            onBack={() => setPhase(GAME_PHASES.HUB)}
+                            onBack={handleBackToHub}
                         />
                     </div>
                 )}
@@ -172,16 +198,8 @@ const OmniHub = () => {
                             palData={adoptedPal}
                             wallet={wallet}
                             onExplore={handleExplore}
-                            onOpenSettings={() => setIsSaveLoadOpen(true)}
-                            onUpdateStats={(newStats) => {
-                                setAdoptedPal(prev => ({
-                                    ...prev,
-                                    role: {
-                                        ...prev.role,
-                                        stats: { ...prev.role.stats, ...newStats }
-                                    }
-                                }));
-                            }}
+                            onOpenSettings={handleOpenSaveLoad}
+                            onUpdateStats={handleUpdateStats}
                         />
                     </div>
                 )}
@@ -201,7 +219,7 @@ const OmniHub = () => {
                 {phase === GAME_PHASES.RIGGING && (
                     <div className="absolute inset-0 z-[60] animate-in fade-in duration-300">
                         <RiggingStudio
-                            onBack={() => setPhase(GAME_PHASES.HUB)}
+                            onBack={handleBackToHub}
                             uiText={uiText}
                         />
                     </div>
