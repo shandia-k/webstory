@@ -5,3 +5,7 @@
 2. `aria-labelledby` linking to the modal title.
 3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
 4. `useRef` and `useEffect` to focus the primary input field on open.
+
+## 2025-02-23 - Custom Interaction Accessibility
+**Learning:** Decorative elements used for core interactions (like the Pet emoji) are often implemented as `div`s, completely bypassing keyboard users.
+**Action:** When identifying custom interactions, immediately wrap or attribute them with `role="button"`, `tabIndex={0}`, and `onKeyDown` handlers for Enter/Space.
