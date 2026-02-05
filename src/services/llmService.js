@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "../constants/systemPrompt";
 import { TRANSLATIONS } from "../constants/textUI";
-import { sanitizeData, safeLog } from "../utils/security";
+import { sanitizeData, safeLog, generateSecureId } from "../utils/security";
 
 
 const getUiText = (lang) => {
@@ -141,7 +141,7 @@ const saveDebugLog = (type, data, prompt = null, model = null) => {
         const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
         const newEntry = {
-            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            id: generateSecureId(),
             timestamp: timestamp,
             type: type, // 'GAME_RESPONSE', 'SECTOR_GEN', 'CHAR_SETUP'
             prompt: sanitizeData(prompt, secrets),
