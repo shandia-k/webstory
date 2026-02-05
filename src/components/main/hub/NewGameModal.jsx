@@ -1,15 +1,49 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
+    const cancelButtonRef = useRef(null);
+
+    // Handle Escape key and Focus Management
+    useEffect(() => {
+        if (isOpen) {
+            // Focus cancel button after a short delay to allow for animation/rendering
+            // Using 50ms as a safe default for React rendering, though Palette recommends 350ms for transitions
+            // The modal has 'duration-200' and 'duration-300' classes, so 50ms might be too fast if we want it after transition
+            // But for functionality, focusing early is usually fine unless the element isn't in DOM.
+            // Let's stick to a safe 100ms which feels snappy but safer.
+            const timer = setTimeout(() => {
+                cancelButtonRef.current?.focus();
+            }, 100);
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    onClose();
+                }
+            };
+
+            window.addEventListener('keydown', handleKeyDown);
+            return () => {
+                window.removeEventListener('keydown', handleKeyDown);
+                clearTimeout(timer);
+            };
+        }
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-game-modal-title"
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
+                aria-hidden="true"
             />
 
             {/* Modal Content */}
@@ -20,11 +54,11 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
                     <AlertTriangle size={48} className="text-white drop-shadow-md animate-pulse" />
                 </div>
 
-                {/* Close Button */}
-
-
                 <div className="p-6 text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-gray-800">
+                    <h3
+                        id="new-game-modal-title"
+                        className="text-2xl font-bold text-gray-800"
+                    >
                         {uiText.HUB.NOTIFICATIONS.CONFIRM_NEW_GAME_TITLE}
                     </h3>
 
@@ -34,14 +68,15 @@ const NewGameModal = ({ isOpen, onClose, onConfirm, uiText }) => {
 
                     <div className="flex gap-3 pt-4">
                         <button
+                            ref={cancelButtonRef}
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                            className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none transition-colors"
                         >
                             {uiText.HUB.BTN_CANCEL}
                         </button>
                         <button
                             onClick={onConfirm}
-                            className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all active:scale-95"
+                            className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:outline-none"
                         >
                             {uiText.HUB.BTN_START}
                         </button>
