@@ -5,3 +5,7 @@
 2. `aria-labelledby` linking to the modal title.
 3. Explicit `aria-label`s for icon-only buttons (Close, Toggle Password).
 4. `useRef` and `useEffect` to focus the primary input field on open.
+
+## 2024-05-24 - Custom Interaction Accessibility
+**Learning:** Non-native interactive elements (like the 'Pet' div) must be manually made accessible using `role="button"`, `tabIndex={0}`, and `onKeyDown` handlers (specifically for Enter/Space).
+**Action:** When creating custom interactions, ensure they are keyboard accessible and have appropriate ARIA roles/labels. Always prevent default behavior for Space key to avoid scrolling.

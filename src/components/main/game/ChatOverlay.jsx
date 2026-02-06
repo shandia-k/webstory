@@ -58,6 +58,7 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Close Chat"
                         className="p-2 bg-white rounded-full text-gray-400 hover:text-pink-500 transition-colors shadow-sm"
                     >
                         <X size={20} />
@@ -118,6 +119,7 @@ const ChatOverlay = ({ isOpen, onClose, palName, messages, onSendMessage, isTypi
                         />
                         <button
                             onClick={handleSend}
+                            aria-label="Send Message"
                             disabled={!input.trim() || isTyping}
                             className="w-12 h-12 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
                         >
